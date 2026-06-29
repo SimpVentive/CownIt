@@ -1,0 +1,78 @@
+import React, { useState } from 'react';
+import { people, commits, achievements, monthlyUpdates, messages, hrComments } from './data/seed';
+import TopBar from './components/TopBar';
+import Sidebar from './components/Sidebar';
+import ContentArea from './components/ContentArea';
+
+function App() {
+  const [state, setState] = useState({
+    activeRole: 'individual',
+    activePage: 'my-commits',
+    selectedPersonId: null,
+    currentUserId: 'p1',
+    data: {
+      people,
+      commits,
+      achievements,
+      monthlyUpdates,
+      messages,
+      hrComments
+    }
+  });
+
+  const handleRoleChange = (newRole) => {
+    const pageMap = {
+      individual: 'my-commits',
+      hr: 'hr-people',
+      ceo: 'ceo-dashboard'
+    };
+
+    setState({
+      ...state,
+      activeRole: newRole,
+      activePage: pageMap[newRole],
+      selectedPersonId: null
+    });
+  };
+
+  const handlePageChange = (newPage) => {
+    setState({
+      ...state,
+      activePage: newPage
+    });
+  };
+
+  const handleSelectPerson = (personId) => {
+    setState({
+      ...state,
+      selectedPersonId: personId
+    });
+  };
+
+  const handleDataChange = (entity, newArray) => {
+    setState(prev => ({
+      ...prev,
+      data: {
+        ...prev.data,
+        [entity]: newArray
+      }
+    }));
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <TopBar activeRole={state.activeRole} onRoleChange={handleRoleChange} />
+      <div style={{ display: 'flex', flex: 1 }}>
+        <Sidebar activeRole={state.activeRole} activePage={state.activePage} onPageChange={handlePageChange} />
+        <ContentArea
+          state={state}
+          onNavigate={handlePageChange}
+          onSelectPerson={handleSelectPerson}
+          onDataChange={handleDataChange}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default App;
