@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import type { AppData, Message } from '../../data/seed'
 import { computeHealthScore } from '../../utils/healthScore'
 import { formatDateShort, currentMonth, currentYear } from '../../utils/formatDate'
+import * as api from '../../services/api'
 
 interface HRPeopleProps {
   data: AppData
@@ -18,6 +19,7 @@ export default function HRPeople({
   onSelectPerson
 }: HRPeopleProps) {
   const [reminderSent, setReminderSent] = useState<string[]>([])
+  const [sendingReminders, setSendingReminders] = useState<Record<string, boolean>>({})
 
   const enrichedPeople = data.people.map(person => ({
     ...person,
@@ -49,18 +51,26 @@ export default function HRPeople({
       enrichedPeople.length
   )
 
-  const handleSendReminder = (personId: string) => {
-    const newMessage: Message = {
-      id: 'msg' + Date.now(),
-      fromRole: 'hr',
-      fromName: 'HR',
-      toPersonId: personId,
-      body: 'Your monthly commit update is overdue. Please log your progress and at least one achievement before end of this month.',
-      date: new Date().toISOString(),
-      read: false
+  const handleSendReminder = async (personId: string) => {
+    setSendingReminders({ ...sendingReminders, [personId]: true })
+    try {
+      const newMessage: Message = {
+        id: 'msg' + Date.now(),
+        fromRole: 'hr',
+        fromName: 'HR',
+        toPersonId: personId,
+        body: 'Your monthly commit update is overdue. Please log your progress and at least one achievement before end of this month.',
+        date: new Date().toISOString(),
+        read: false
+      }
+      await api.createMessage(newMessage)
+      onDataChange('messages', [...data.messages, newMessage])
+      setReminderSent([...reminderSent, personId])
+    } catch (err) {
+      console.error('Failed to send reminder:', err)
+    } finally {
+      setSendingReminders({ ...sendingReminders, [personId]: false })
     }
-    onDataChange('messages', [...data.messages, newMessage])
-    setReminderSent([...reminderSent, personId])
   }
 
   const getHealthBarColor = (score: number): string => {
@@ -200,9 +210,14 @@ export default function HRPeople({
               {!person.hasUpdate && !reminderSent.includes(person.id) ? (
                 <TouchableOpacity
                   onPress={() => handleSendReminder(person.id)}
-                  style={styles.reminderButton}
+                  disabled={sendingReminders[person.id]}
+                  style={[styles.reminderButton, sendingReminders[person.id] && styles.reminderButtonDisabled]}
                 >
-                  <Text style={styles.reminderButtonText}>Send reminder</Text>
+                  {sendingReminders[person.id] ? (
+                    <ActivityIndicator size="small" color="#993C1D" />
+                  ) : (
+                    <Text style={styles.reminderButtonText}>Send reminder</Text>
+                  )}
                 </TouchableOpacity>
               ) : reminderSent.includes(person.id) ? (
                 <Text style={styles.reminderSentText}>Reminder sent ✓</Text>
@@ -365,7 +380,13 @@ const styles = StyleSheet.create({
     borderColor: '#993C1D',
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 6
+    borderRadius: 6,
+    minHeight: 32,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  reminderButtonDisabled: {
+    opacity: 0.5
   },
   reminderButtonText: {
     fontSize: 12,

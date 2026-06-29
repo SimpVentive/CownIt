@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import { ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import type { AppData, Message } from '../../data/seed'
 import { formatDateShort } from '../../utils/formatDate'
+import * as api from '../../services/api'
 
 interface CEOMessageProps {
   data: AppData
@@ -19,6 +20,7 @@ export default function CEOMessage({
   )
   const [messageBody, setMessageBody] = useState('')
   const [justSent, setJustSent] = useState(false)
+  const [isSending, setIsSending] = useState(false)
 
   useEffect(() => {
     if (selectedRecipientId) {
@@ -26,23 +28,31 @@ export default function CEOMessage({
     }
   }, [selectedRecipientId])
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (messageBody.trim().length < 5) return
 
-    const newMessage: Message = {
-      id: 'msg' + Date.now(),
-      fromRole: 'ceo',
-      fromName: 'CEO',
-      toPersonId: recipientId,
-      body: messageBody.trim(),
-      date: new Date().toISOString(),
-      read: false
-    }
+    setIsSending(true)
+    try {
+      const newMessage: Message = {
+        id: 'msg' + Date.now(),
+        fromRole: 'ceo',
+        fromName: 'CEO',
+        toPersonId: recipientId,
+        body: messageBody.trim(),
+        date: new Date().toISOString(),
+        read: false
+      }
 
-    onDataChange('messages', [...data.messages, newMessage])
-    setMessageBody('')
-    setJustSent(true)
-    setTimeout(() => setJustSent(false), 2000)
+      await api.createMessage(newMessage)
+      onDataChange('messages', [...data.messages, newMessage])
+      setMessageBody('')
+      setJustSent(true)
+      setTimeout(() => setJustSent(false), 2000)
+    } catch (err) {
+      console.error('Failed to send message:', err)
+    } finally {
+      setIsSending(false)
+    }
   }
 
   const sentMessages = data.messages
@@ -118,13 +128,17 @@ export default function CEOMessage({
         />
         <TouchableOpacity
           onPress={handleSendMessage}
-          disabled={messageBody.trim().length < 5}
+          disabled={messageBody.trim().length < 5 || isSending}
           style={[
             styles.sendButton,
-            messageBody.trim().length < 5 && styles.sendButtonDisabled
+            (messageBody.trim().length < 5 || isSending) && styles.sendButtonDisabled
           ]}
         >
-          <Text style={styles.sendButtonText}>Send message</Text>
+          {isSending ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.sendButtonText}>Send message</Text>
+          )}
         </TouchableOpacity>
         {justSent && (
           <Text style={styles.sentConfirm}>Message sent ✓</Text>

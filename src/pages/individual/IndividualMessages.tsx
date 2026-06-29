@@ -3,6 +3,7 @@ import { ScrollView, View, Text, StyleSheet } from 'react-native'
 import { Crown, Users } from 'lucide-react-native'
 import type { AppData } from '../../data/seed'
 import { formatDateShort } from '../../utils/formatDate'
+import * as api from '../../services/api'
 
 interface IndividualMessagesProps {
   data: AppData
@@ -16,10 +17,24 @@ export default function IndividualMessages({
   onDataChange
 }: IndividualMessagesProps) {
   useEffect(() => {
-    const updated = data.messages.map(m =>
-      m.toPersonId === currentPersonId ? { ...m, read: true } : m
-    )
-    onDataChange('messages', updated)
+    const markMessagesAsRead = async () => {
+      const unreadMessages = data.messages.filter(
+        m => m.toPersonId === currentPersonId && !m.read
+      )
+      for (const message of unreadMessages) {
+        try {
+          await api.markMessageAsRead(message.id)
+        } catch (err) {
+          console.error(`Failed to mark message ${message.id} as read:`, err)
+        }
+      }
+      const updated = data.messages.map(m =>
+        m.toPersonId === currentPersonId ? { ...m, read: true } : m
+      )
+      onDataChange('messages', updated)
+    }
+
+    markMessagesAsRead()
   }, [])
 
   const myMessages = data.messages

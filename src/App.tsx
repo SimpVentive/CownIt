@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
-import { SafeAreaView, View } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import { SafeAreaView, View, ActivityIndicator, Text } from 'react-native'
 import type { AppData } from './data/seed'
-import { initialData } from './data/seed'
 import { CURRENT_PERSON_ID } from './utils/constants'
+import * as api from './services/api'
 
 import TopBar from './components/TopBar'
 import Sidebar from './components/Sidebar'
@@ -28,6 +28,8 @@ type AppState = {
   selectedPersonId: string | null
   selectedRecipientId: string | null
   data: AppData
+  isLoading: boolean
+  error: string | null
 }
 
 const initialState: AppState = {
@@ -35,11 +37,62 @@ const initialState: AppState = {
   activePage: 'my-commits',
   selectedPersonId: null,
   selectedRecipientId: null,
-  data: initialData
+  data: {
+    people: [],
+    commits: [],
+    achievements: [],
+    monthlyUpdates: [],
+    messages: [],
+    hrComments: []
+  },
+  isLoading: true,
+  error: null
 }
 
 export default function App() {
   const [state, setState] = useState<AppState>(initialState)
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        // Login as default user
+        await api.login(CURRENT_PERSON_ID, 'individual')
+
+        // Fetch all data in parallel
+        const [people, commits, achievements, monthlyUpdates, messages, hrComments] = await Promise.all([
+          api.fetchPeople(),
+          api.fetchCommits(),
+          api.fetchAchievements(),
+          api.fetchMonthlyUpdates(),
+          api.fetchMessages(),
+          api.fetchHRComments()
+        ])
+
+        setState(prev => ({
+          ...prev,
+          data: {
+            people,
+            commits,
+            achievements,
+            monthlyUpdates,
+            messages,
+            hrComments
+          },
+          isLoading: false,
+          error: null
+        }))
+      } catch (err) {
+        console.error('Failed to initialize app:', err)
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          error: err instanceof Error ? err.message : 'Failed to load data'
+        }))
+      }
+    }
+
+    initializeApp()
+  }, [])
 
   const handleRoleChange = (role: 'individual' | 'hr' | 'ceo') => {
     const defaultPages = {
@@ -113,6 +166,24 @@ export default function App() {
       default:
         return <MyCommits {...props} />
     }
+  }
+
+  if (state.isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" color="#534AB7" />
+      </SafeAreaView>
+    )
+  }
+
+  if (state.error) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <Text style={{ color: '#993C1D', fontSize: 16, textAlign: 'center', paddingHorizontal: 20 }}>
+          Error: {state.error}
+        </Text>
+      </SafeAreaView>
+    )
   }
 
   return (

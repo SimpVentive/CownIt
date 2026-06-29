@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import { ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import type { AppData, Commit, MonthlyUpdate } from '../../data/seed'
 import { formatDateShort, formatDate, currentMonth, currentYear, currentMonthName, lastDayOfNextMonth } from '../../utils/formatDate'
 import { LEVEL_COLORS } from '../../utils/constants'
+import * as api from '../../services/api'
 
 interface MyCommitsProps {
   data: AppData
@@ -15,36 +16,53 @@ export default function MyCommits({ data, currentPersonId, onDataChange }: MyCom
   const [draftStatement, setDraftStatement] = useState('')
   const [showUpdateForm, setShowUpdateForm] = useState(false)
   const [updateNote, setUpdateNote] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
 
   const levels = ['self', 'team', 'org']
 
-  const saveCommit = () => {
+  const saveCommit = async () => {
     if (draftStatement.trim().length < 5) return
-    const newCommit: Commit = {
-      id: 'c' + Date.now(),
-      personId: currentPersonId,
-      level: addingCommit!.level as 'self' | 'team' | 'org',
-      statement: draftStatement.trim(),
-      createdAt: new Date().toISOString()
+    setIsSaving(true)
+    try {
+      const newCommit: Commit = {
+        id: 'c' + Date.now(),
+        personId: currentPersonId,
+        level: addingCommit!.level as 'self' | 'team' | 'org',
+        statement: draftStatement.trim(),
+        createdAt: new Date().toISOString()
+      }
+      await api.createCommit(newCommit)
+      onDataChange('commits', [...data.commits, newCommit])
+      setAddingCommit(null)
+      setDraftStatement('')
+    } catch (err) {
+      console.error('Failed to save commit:', err)
+    } finally {
+      setIsSaving(false)
     }
-    onDataChange('commits', [...data.commits, newCommit])
-    setAddingCommit(null)
-    setDraftStatement('')
   }
 
-  const saveUpdate = () => {
+  const saveUpdate = async () => {
     if (updateNote.trim().length < 3) return
-    const newUpdate: MonthlyUpdate = {
-      id: 'u' + Date.now(),
-      personId: currentPersonId,
-      month: currentMonth(),
-      year: currentYear(),
-      note: updateNote.trim(),
-      updatedAt: new Date().toISOString()
+    setIsSaving(true)
+    try {
+      const newUpdate: MonthlyUpdate = {
+        id: 'u' + Date.now(),
+        personId: currentPersonId,
+        month: currentMonth(),
+        year: currentYear(),
+        note: updateNote.trim(),
+        updatedAt: new Date().toISOString()
+      }
+      await api.createMonthlyUpdate(newUpdate)
+      onDataChange('monthlyUpdates', [...data.monthlyUpdates, newUpdate])
+      setShowUpdateForm(false)
+      setUpdateNote('')
+    } catch (err) {
+      console.error('Failed to save update:', err)
+    } finally {
+      setIsSaving(false)
     }
-    onDataChange('monthlyUpdates', [...data.monthlyUpdates, newUpdate])
-    setShowUpdateForm(false)
-    setUpdateNote('')
   }
 
   const monthlyUpdate = data.monthlyUpdates.find(
@@ -106,13 +124,17 @@ export default function MyCommits({ data, currentPersonId, onDataChange }: MyCom
                     <View style={styles.buttonRow}>
                       <TouchableOpacity
                         onPress={saveCommit}
-                        disabled={draftStatement.trim().length < 5}
+                        disabled={draftStatement.trim().length < 5 || isSaving}
                         style={[
                           styles.buttonSave,
-                          draftStatement.trim().length < 5 && styles.buttonDisabled
+                          (draftStatement.trim().length < 5 || isSaving) && styles.buttonDisabled
                         ]}
                       >
-                        <Text style={styles.buttonSaveText}>Save</Text>
+                        {isSaving ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={styles.buttonSaveText}>Save</Text>
+                        )}
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => {
@@ -180,13 +202,17 @@ export default function MyCommits({ data, currentPersonId, onDataChange }: MyCom
                 />
                 <TouchableOpacity
                   onPress={saveUpdate}
-                  disabled={updateNote.trim().length < 3}
+                  disabled={updateNote.trim().length < 3 || isSaving}
                   style={[
                     styles.saveUpdateButton,
-                    updateNote.trim().length < 3 && styles.buttonDisabled
+                    (updateNote.trim().length < 3 || isSaving) && styles.buttonDisabled
                   ]}
                 >
-                  <Text style={styles.saveUpdateButtonText}>Save update</Text>
+                  {isSaving ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.saveUpdateButtonText}>Save update</Text>
+                  )}
                 </TouchableOpacity>
               </>
             )}

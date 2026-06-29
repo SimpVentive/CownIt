@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { ScrollView, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, StyleSheet, Platform } from 'react-native'
+import { ScrollView, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, StyleSheet, Platform, ActivityIndicator } from 'react-native'
 import type { AppData, Achievement } from '../../data/seed'
 import { CPQSDP_COLORS, CPQSDP_LABELS, LEVEL_COLORS } from '../../utils/constants'
+import * as api from '../../services/api'
 
 interface LogAchievementProps {
   data: AppData
@@ -24,6 +25,7 @@ export default function LogAchievement({
   const [impactRating, setImpactRating] = useState<number | null>(null)
   const [fileAttachment, setFileAttachment] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSaving, setIsSaving] = useState(false)
 
   const toggleCPQSDP = (key: string) => {
     setSelectedCPQSDP(prev =>
@@ -31,7 +33,7 @@ export default function LogAchievement({
     )
   }
 
-  const validateAndSave = () => {
+  const validateAndSave = async () => {
     const newErrors: Record<string, string> = {}
 
     if (title.trim().length < 5) {
@@ -58,28 +60,37 @@ export default function LogAchievement({
       return
     }
 
-    const newAchievement: Achievement = {
-      id: 'a' + Date.now(),
-      personId: currentPersonId,
-      commitId: selectedCommitId!,
-      title: title.trim(),
-      evidence: evidence.trim(),
-      cpqsdp: selectedCPQSDP as Array<'C' | 'P' | 'Q' | 'S' | 'D' | 'O'>,
-      impactRating: impactRating!,
-      date: new Date().toISOString(),
-      fileAttachment: fileAttachment
-    }
+    setIsSaving(true)
+    try {
+      const newAchievement: Achievement = {
+        id: 'a' + Date.now(),
+        personId: currentPersonId,
+        commitId: selectedCommitId!,
+        title: title.trim(),
+        evidence: evidence.trim(),
+        cpqsdp: selectedCPQSDP as Array<'C' | 'P' | 'Q' | 'S' | 'D' | 'O'>,
+        impactRating: impactRating!,
+        date: new Date().toISOString(),
+        fileAttachment: fileAttachment
+      }
 
-    onDataChange('achievements', [...data.achievements, newAchievement])
-    setTitle('')
-    setSelectedLevel(null)
-    setSelectedCommitId(null)
-    setEvidence('')
-    setSelectedCPQSDP([])
-    setImpactRating(null)
-    setFileAttachment(null)
-    setErrors({})
-    onNavigate('my-impact')
+      await api.createAchievement(newAchievement)
+      onDataChange('achievements', [...data.achievements, newAchievement])
+      setTitle('')
+      setSelectedLevel(null)
+      setSelectedCommitId(null)
+      setEvidence('')
+      setSelectedCPQSDP([])
+      setImpactRating(null)
+      setFileAttachment(null)
+      setErrors({})
+      onNavigate('my-impact')
+    } catch (err) {
+      console.error('Failed to save achievement:', err)
+      setErrors({ save: 'Failed to save achievement. Please try again.' })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const levelButtons = [
@@ -267,10 +278,17 @@ export default function LogAchievement({
         {/* Save Button */}
         <TouchableOpacity
           onPress={validateAndSave}
-          style={styles.saveButton}
+          disabled={isSaving}
+          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
         >
-          <Text style={styles.saveButtonText}>Save achievement</Text>
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save achievement</Text>
+          )}
         </TouchableOpacity>
+
+        {errors.save && <Text style={styles.error}>{errors.save}</Text>}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -455,6 +473,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 20
+  },
+  saveButtonDisabled: {
+    opacity: 0.5
   },
   saveButtonText: {
     fontSize: 14,

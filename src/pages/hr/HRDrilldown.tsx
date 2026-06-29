@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import { ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import { ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import type { AppData, HRComment } from '../../data/seed'
 import { computeHealthScore } from '../../utils/healthScore'
 import { formatDateShort } from '../../utils/formatDate'
 import { LEVEL_COLORS, CPQSDP_COLORS } from '../../utils/constants'
+import * as api from '../../services/api'
 
 interface HRDrilldownProps {
   data: AppData
@@ -19,6 +20,7 @@ export default function HRDrilldown({
   onNavigate
 }: HRDrilldownProps) {
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
+  const [savingComments, setSavingComments] = useState<Record<string, boolean>>({})
 
   if (!selectedPersonId) {
     return (
@@ -48,19 +50,27 @@ export default function HRDrilldown({
     )
   }
 
-  const handlePostComment = (achievementId: string) => {
+  const handlePostComment = async (achievementId: string) => {
     const body = commentDrafts[achievementId]?.trim()
     if (!body) return
 
-    const newComment: HRComment = {
-      id: 'hrc' + Date.now(),
-      achievementId,
-      authorName: 'HR',
-      body,
-      date: new Date().toISOString()
+    setSavingComments({ ...savingComments, [achievementId]: true })
+    try {
+      const newComment: HRComment = {
+        id: 'hrc' + Date.now(),
+        achievementId,
+        authorName: 'HR',
+        body,
+        date: new Date().toISOString()
+      }
+      await api.createHRComment(newComment)
+      onDataChange('hrComments', [...data.hrComments, newComment])
+      setCommentDrafts({ ...commentDrafts, [achievementId]: '' })
+    } catch (err) {
+      console.error('Failed to post comment:', err)
+    } finally {
+      setSavingComments({ ...savingComments, [achievementId]: false })
     }
-    onDataChange('hrComments', [...data.hrComments, newComment])
-    setCommentDrafts({ ...commentDrafts, [achievementId]: '' })
   }
 
   const healthScore = computeHealthScore(selectedPersonId, data)
@@ -199,14 +209,18 @@ export default function HRDrilldown({
                   />
                   <TouchableOpacity
                     onPress={() => handlePostComment(achievement.id)}
-                    disabled={!commentDrafts[achievement.id]?.trim()}
+                    disabled={!commentDrafts[achievement.id]?.trim() || savingComments[achievement.id]}
                     style={[
                       styles.postButton,
-                      !commentDrafts[achievement.id]?.trim() &&
+                      (!commentDrafts[achievement.id]?.trim() || savingComments[achievement.id]) &&
                         styles.postButtonDisabled
                     ]}
                   >
-                    <Text style={styles.postButtonText}>Post</Text>
+                    {savingComments[achievement.id] ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.postButtonText}>Post</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               </View>
