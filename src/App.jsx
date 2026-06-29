@@ -3,13 +3,18 @@ import { people, commits, achievements, monthlyUpdates, messages, hrComments } f
 import TopBar from './components/TopBar';
 import Sidebar from './components/Sidebar';
 import ContentArea from './components/ContentArea';
+import Auth from './pages/Auth';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentPhoneNumber, setCurrentPhoneNumber] = useState(null);
+
   const [state, setState] = useState({
     activeRole: 'individual',
     activePage: 'my-commits',
     selectedPersonId: null,
-    currentUserId: 'p1',
+    currentUserId: null,
     data: {
       people,
       commits,
@@ -19,6 +24,36 @@ function App() {
       hrComments
     }
   });
+
+  const handleLoginSuccess = (userId, phoneNumber) => {
+    setIsAuthenticated(true);
+    setCurrentUserId(userId);
+    setCurrentPhoneNumber(phoneNumber);
+    setState(prev => ({
+      ...prev,
+      currentUserId: userId
+    }));
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setCurrentUserId(null);
+    setCurrentPhoneNumber(null);
+    setState({
+      activeRole: 'individual',
+      activePage: 'my-commits',
+      selectedPersonId: null,
+      currentUserId: null,
+      data: {
+        people,
+        commits,
+        achievements,
+        monthlyUpdates,
+        messages,
+        hrComments
+      }
+    });
+  };
 
   const handleRoleChange = (newRole) => {
     const pageMap = {
@@ -59,9 +94,18 @@ function App() {
     }));
   };
 
+  if (!isAuthenticated) {
+    return <Auth onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <TopBar activeRole={state.activeRole} onRoleChange={handleRoleChange} />
+      <TopBar
+        activeRole={state.activeRole}
+        onRoleChange={handleRoleChange}
+        currentUser={state.data.people.find(p => p.id === state.currentUserId)}
+        onLogout={handleLogout}
+      />
       <div style={{ display: 'flex', flex: 1 }}>
         <Sidebar activeRole={state.activeRole} activePage={state.activePage} onPageChange={handlePageChange} />
         <ContentArea
