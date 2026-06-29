@@ -1,6 +1,6 @@
 import React from 'react';
 
-function TopBar({ activeRole, onRoleChange, currentUser }) {
+function TopBar({ activeRole, onRoleChange, currentUser, onLogout }) {
   const roles = [
     { value: 'individual', label: 'Individual' },
     { value: 'hr', label: 'HR' },
@@ -54,12 +54,31 @@ function TopBar({ activeRole, onRoleChange, currentUser }) {
         })}
       </div>
 
-      {/* User Info */}
-      {currentUser && (
-        <div style={{ fontSize: '13px', fontWeight: 400, color: '#666' }}>
-          {currentUser.name}
-        </div>
-      )}
+      {/* User Info & Logout */}
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+        {currentUser && (
+          <div style={{ fontSize: '13px', fontWeight: 400, color: '#666' }}>
+            {currentUser.name}
+          </div>
+        )}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            style={{
+              padding: '8px 14px',
+              backgroundColor: 'transparent',
+              color: '#dc3545',
+              border: '0.5px solid #dc3545',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 400,
+              cursor: 'pointer'
+            }}
+          >
+            Logout
+          </button>
+        )}
+      </div>
     </div>
   );
 }

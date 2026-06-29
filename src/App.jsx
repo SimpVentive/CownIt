@@ -3,13 +3,18 @@ import { people, commits, achievements, monthlyUpdates, messages, hrComments } f
 import TopBar from './components/TopBar';
 import Sidebar from './components/Sidebar';
 import ContentArea from './components/ContentArea';
+import Login from './pages/Login';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+
   const [state, setState] = useState({
-    activeRole: 'individual',
-    activePage: 'my-commits',
+    activeRole: null,
+    activePage: null,
     selectedPersonId: null,
-    currentUserId: 'p1',
+    currentUserId: null,
     data: {
       people,
       commits,
@@ -19,6 +24,45 @@ function App() {
       hrComments
     }
   });
+
+  const handleLoginSuccess = (role, userId, userName) => {
+    const pageMap = {
+      individual: 'my-commits',
+      hr: 'people',
+      ceo: 'dashboard'
+    };
+
+    setIsAuthenticated(true);
+    setCurrentUserRole(role);
+    setCurrentUserId(userId);
+
+    setState(prev => ({
+      ...prev,
+      activeRole: role,
+      activePage: pageMap[role],
+      currentUserId: userId
+    }));
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setCurrentUserRole(null);
+    setCurrentUserId(null);
+    setState({
+      activeRole: null,
+      activePage: null,
+      selectedPersonId: null,
+      currentUserId: null,
+      data: {
+        people,
+        commits,
+        achievements,
+        monthlyUpdates,
+        messages,
+        hrComments
+      }
+    });
+  };
 
   const handleRoleChange = (newRole) => {
     const pageMap = {
@@ -59,6 +103,10 @@ function App() {
     }));
   };
 
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
   const currentUser = state.data.people.find(p => p.id === state.currentUserId);
 
   return (
@@ -72,6 +120,7 @@ function App() {
         activeRole={state.activeRole}
         onRoleChange={handleRoleChange}
         currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       <div style={{ display: 'flex', flex: 1 }}>
