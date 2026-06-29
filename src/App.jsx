@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { people, commits, achievements, monthlyUpdates, messages, hrComments } from './data/seed';
 import TopBar from './components/TopBar';
-import MobileNav from './components/MobileNav';
+import LeftSidebar from './components/LeftSidebar';
 import ContentArea from './components/ContentArea';
 import Auth from './pages/Auth';
 import Onboarding from './components/Onboarding';
@@ -116,23 +116,25 @@ function App() {
 
       <TopBar
         activeRole={state.activeRole}
-        onRoleChange={handleRoleChange}
         currentUser={state.data.people.find(p => p.id === state.currentUserId)}
         onLogout={handleLogout}
       />
 
-      <ContentArea
-        state={state}
-        onNavigate={handlePageChange}
-        onSelectPerson={handleSelectPerson}
-        onDataChange={handleDataChange}
-      />
+      <div style={{ display: 'flex', flex: 1 }}>
+        <LeftSidebar
+          activeRole={state.activeRole}
+          activePage={state.activePage}
+          onPageChange={handlePageChange}
+          onLogout={handleLogout}
+        />
 
-      <MobileNav
-        activeRole={state.activeRole}
-        activePage={state.activePage}
-        onPageChange={handlePageChange}
-      />
+        <ContentArea
+          state={state}
+          onNavigate={handlePageChange}
+          onSelectPerson={handleSelectPerson}
+          onDataChange={handleDataChange}
+        />
+      </div>
     </div>
   );
 }

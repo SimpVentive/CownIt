@@ -65,7 +65,7 @@ function ContentArea({ state, onNavigate, onSelectPerson, onDataChange }) {
     <div
       style={{
         flex: 1,
-        padding: '24px 16px 90px 16px',
+        padding: '24px',
         overflow: 'auto',
         animation: 'fadeIn 0.3s ease-out'
       }}
