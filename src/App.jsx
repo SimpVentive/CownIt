@@ -1,24 +1,15 @@
 import React, { useState } from 'react';
 import { people, commits, achievements, monthlyUpdates, messages, hrComments } from './data/seed';
 import TopBar from './components/TopBar';
-import LeftSidebar from './components/LeftSidebar';
+import Sidebar from './components/Sidebar';
 import ContentArea from './components/ContentArea';
-import Auth from './pages/Auth';
-import Onboarding from './components/Onboarding';
-import './styles/animations.css';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState(null);
-  const [currentPhoneNumber, setCurrentPhoneNumber] = useState(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [currentUserName, setCurrentUserName] = useState('');
-
   const [state, setState] = useState({
     activeRole: 'individual',
     activePage: 'my-commits',
     selectedPersonId: null,
-    currentUserId: null,
+    currentUserId: 'p1',
     data: {
       people,
       commits,
@@ -29,66 +20,33 @@ function App() {
     }
   });
 
-  const handleLoginSuccess = (userId, phoneNumber) => {
-    const user = people.find(p => p.id === userId);
-    setIsAuthenticated(true);
-    setCurrentUserId(userId);
-    setCurrentPhoneNumber(phoneNumber);
-    setCurrentUserName(user?.name || '');
-    setShowOnboarding(true);
-    setState(prev => ({
-      ...prev,
-      currentUserId: userId
-    }));
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setCurrentUserId(null);
-    setCurrentPhoneNumber(null);
-    setState({
-      activeRole: 'individual',
-      activePage: 'my-commits',
-      selectedPersonId: null,
-      currentUserId: null,
-      data: {
-        people,
-        commits,
-        achievements,
-        monthlyUpdates,
-        messages,
-        hrComments
-      }
-    });
-  };
-
   const handleRoleChange = (newRole) => {
     const pageMap = {
       individual: 'my-commits',
-      hr: 'hr-people',
-      ceo: 'ceo-dashboard'
+      hr: 'people',
+      ceo: 'dashboard'
     };
 
-    setState({
-      ...state,
+    setState(prev => ({
+      ...prev,
       activeRole: newRole,
       activePage: pageMap[newRole],
       selectedPersonId: null
-    });
+    }));
   };
 
   const handlePageChange = (newPage) => {
-    setState({
-      ...state,
+    setState(prev => ({
+      ...prev,
       activePage: newPage
-    });
+    }));
   };
 
   const handleSelectPerson = (personId) => {
-    setState({
-      ...state,
+    setState(prev => ({
+      ...prev,
       selectedPersonId: personId
-    });
+    }));
   };
 
   const handleDataChange = (entity, newArray) => {
@@ -101,31 +59,26 @@ function App() {
     }));
   };
 
-  if (!isAuthenticated) {
-    return <Auth onLoginSuccess={handleLoginSuccess} />;
-  }
+  const currentUser = state.data.people.find(p => p.id === state.currentUserId);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#f8f9fa' }}>
-      {showOnboarding && (
-        <Onboarding
-          userName={currentUserName}
-          onComplete={() => setShowOnboarding(false)}
-        />
-      )}
-
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh',
+      backgroundColor: '#fff'
+    }}>
       <TopBar
         activeRole={state.activeRole}
-        currentUser={state.data.people.find(p => p.id === state.currentUserId)}
-        onLogout={handleLogout}
+        onRoleChange={handleRoleChange}
+        currentUser={currentUser}
       />
 
       <div style={{ display: 'flex', flex: 1 }}>
-        <LeftSidebar
+        <Sidebar
           activeRole={state.activeRole}
           activePage={state.activePage}
           onPageChange={handlePageChange}
-          onLogout={handleLogout}
         />
 
         <ContentArea

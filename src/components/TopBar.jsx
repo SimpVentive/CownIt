@@ -1,65 +1,65 @@
 import React from 'react';
 
-const ACCENT_COLOR = '#007bff';
-const SECONDARY_TEXT = '#999';
-const BORDER_COLOR = '#ddd';
+function TopBar({ activeRole, onRoleChange, currentUser }) {
+  const roles = [
+    { value: 'individual', label: 'Individual' },
+    { value: 'hr', label: 'HR' },
+    { value: 'ceo', label: 'CEO' }
+  ];
 
-function TopBar({ activeRole, onRoleChange, currentUser, onLogout, isAdmin }) {
   return (
     <div style={{
-      padding: '16px 24px',
-      backgroundColor: '#fff',
-      borderBottom: `1px solid ${BORDER_COLOR}`,
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+      padding: '16px 24px',
+      borderBottom: '0.5px solid #e0e0e0',
+      backgroundColor: '#fff'
     }}>
+      {/* Logo */}
       <div>
         <h1 style={{
-          margin: '0 0 2px 0',
-          fontSize: '20px',
-          fontWeight: '700',
-          lineHeight: '1.2'
+          margin: 0,
+          fontSize: '18px',
+          fontWeight: 500,
+          color: '#000'
         }}>
-          Cow
-          <span style={{ color: ACCENT_COLOR }}>It</span>
+          CownIt
         </h1>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-        {/* User Info */}
-        {currentUser && (
-          <div style={{ textAlign: 'right', borderRight: `1px solid ${BORDER_COLOR}`, paddingRight: '16px' }}>
-            <div style={{ fontSize: '12px', fontWeight: '500', color: '#333' }}>
-              {currentUser.name}
-            </div>
-            <div style={{ fontSize: '10px', color: SECONDARY_TEXT }}>
-              {activeRole === 'individual' ? 'Individual' : activeRole.toUpperCase()}
-            </div>
-          </div>
-        )}
-
-        {/* Logout Button */}
-        {onLogout && (
-          <button
-            onClick={onLogout}
-            style={{
-              padding: '6px 12px',
-              backgroundColor: 'transparent',
-              color: '#dc3545',
-              border: '1px solid #dc3545',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '11px',
-              fontWeight: '500',
-              transition: 'all 0.2s'
-            }}
-          >
-            Logout
-          </button>
-        )}
+      {/* Role Switcher */}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        {roles.map(role => {
+          const isActive = activeRole === role.value;
+          return (
+            <button
+              key={role.value}
+              onClick={() => onRoleChange(role.value)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: isActive ? '#000' : '#f5f5f5',
+                color: isActive ? '#fff' : '#000',
+                border: '0.5px solid #e0e0e0',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 400,
+                cursor: 'pointer',
+                transition: 'all 0.15s'
+              }}
+            >
+              {role.label}
+            </button>
+          );
+        })}
       </div>
+
+      {/* User Info */}
+      {currentUser && (
+        <div style={{ fontSize: '13px', fontWeight: 400, color: '#666' }}>
+          {currentUser.name}
+        </div>
+      )}
     </div>
   );
 }

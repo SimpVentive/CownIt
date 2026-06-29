@@ -1,27 +1,23 @@
 import React from 'react';
-import { ListCheck, PlusCircle, ChartLine, MessageCircle, Users, Eye, Bell, LayoutDashboard, GridDots, Send } from 'lucide-react';
-
-const ACCENT_COLOR = '#007bff';
-const SECONDARY_TEXT = '#999';
-const SURFACE_1 = '#f5f5f5';
+import { CheckCircle, PlusCircle, TrendingUp, MessageSquare, Users, Eye, Bell, BarChart3, Send } from 'lucide-react';
 
 const NAV_MAP = {
   individual: [
-    { page: 'my-commits', icon: ListCheck, label: 'My commits' },
+    { page: 'my-commits', icon: CheckCircle, label: 'My commits' },
     { page: 'log-achievement', icon: PlusCircle, label: 'Log achievement' },
-    { page: 'my-impact', icon: ChartLine, label: 'My impact' },
-    { page: 'messages', icon: MessageCircle, label: 'Messages' }
+    { page: 'my-impact', icon: TrendingUp, label: 'My impact' },
+    { page: 'messages', icon: MessageSquare, label: 'Messages' }
   ],
   hr: [
-    { page: 'hr-people', icon: Users, label: 'People' },
-    { page: 'hr-drilldown', icon: Eye, label: 'Individual view' },
-    { page: 'hr-reminders', icon: Bell, label: 'Reminders' }
+    { page: 'people', icon: Users, label: 'People' },
+    { page: 'drilldown', icon: Eye, label: 'Individual view' },
+    { page: 'reminders', icon: Bell, label: 'Reminders' }
   ],
   ceo: [
-    { page: 'ceo-dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { page: 'ceo-people', icon: Users, label: 'People view' },
-    { page: 'ceo-heatmap', icon: GridDots, label: 'Impact heatmap' },
-    { page: 'ceo-message', icon: Send, label: 'Send message' }
+    { page: 'dashboard', icon: BarChart3, label: 'Dashboard' },
+    { page: 'people', icon: Users, label: 'People' },
+    { page: 'heatmap', icon: TrendingUp, label: 'Impact heatmap' },
+    { page: 'message', icon: Send, label: 'Send message' }
   ]
 };
 
@@ -30,11 +26,10 @@ function Sidebar({ activeRole, activePage, onPageChange }) {
 
   return (
     <div style={{
-      width: '180px',
-      backgroundColor: '#fff',
-      borderRight: '1px solid #ddd',
-      padding: '16px 12px',
-      overflow: 'auto'
+      width: '200px',
+      borderRight: '0.5px solid #e0e0e0',
+      padding: '16px 0',
+      backgroundColor: '#fff'
     }}>
       {navItems.map(item => {
         const Icon = item.icon;
@@ -46,33 +41,21 @@ function Sidebar({ activeRole, activePage, onPageChange }) {
             onClick={() => onPageChange(item.page)}
             style={{
               width: '100%',
+              padding: '12px 16px',
               display: 'flex',
-              alignItems: 'center',
               gap: '12px',
-              padding: '12px',
-              marginBottom: '4px',
-              backgroundColor: isActive ? ACCENT_COLOR : 'transparent',
-              color: isActive ? ACCENT_COLOR : SECONDARY_TEXT,
+              alignItems: 'center',
+              backgroundColor: isActive ? '#f5f5f5' : 'transparent',
               border: 'none',
-              borderRadius: '4px',
+              color: '#000',
+              fontSize: '13px',
+              fontWeight: 400,
               cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: isActive ? '500' : '400',
-              transition: 'background-color 0.2s',
-              textAlign: 'left'
-            }}
-            onMouseEnter={(e) => {
-              if (!isActive) {
-                e.target.style.backgroundColor = SURFACE_1;
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isActive) {
-                e.target.style.backgroundColor = 'transparent';
-              }
+              textAlign: 'left',
+              transition: 'all 0.15s'
             }}
           >
-            <Icon size={18} />
+            <Icon size={18} strokeWidth={1.5} />
             <span>{item.label}</span>
           </button>
         );
