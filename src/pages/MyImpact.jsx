@@ -59,35 +59,47 @@ function MyImpact({ data, currentPersonId }) {
       <h2 style={{ marginBottom: '24px' }}>My impact</h2>
 
       {/* Stat Cards */}
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }}>
         {[
           {
             label: 'Achievements logged',
-            value: myAchievements.length
+            value: myAchievements.length,
+            icon: '🎯',
+            color: '#667BC6'
           },
           {
             label: 'Avg impact rating',
-            value: avgRating
+            value: avgRating,
+            icon: '⭐',
+            color: '#0F6E56'
           },
           {
             label: 'Dimensions covered',
-            value: dimensionsCovered
+            value: dimensionsCovered,
+            icon: '📊',
+            color: '#185FA5'
           }
         ].map((stat, idx) => (
           <div
             key={idx}
             style={{
-              flex: 1,
+              flex: '1 1 calc(33.333% - 8px)',
+              minWidth: '120px',
               padding: '16px',
               backgroundColor: '#fff',
-              border: `1px solid #ddd`,
-              borderRadius: '4px'
+              border: `2px solid ${stat.color}20`,
+              borderRadius: '8px',
+              animation: `slideInUp 0.4s ease-out ${idx * 0.1}s backwards`
             }}
+            className="card-hover"
           >
-            <div style={{ fontSize: '12px', color: SECONDARY_TEXT, marginBottom: '8px' }}>
+            <div style={{ fontSize: '20px', marginBottom: '8px' }}>
+              {stat.icon}
+            </div>
+            <div style={{ fontSize: '11px', color: SECONDARY_TEXT, marginBottom: '8px' }}>
               {stat.label}
             </div>
-            <div style={{ fontSize: '28px', fontWeight: '700' }}>
+            <div style={{ fontSize: '28px', fontWeight: '700', color: stat.color }}>
               {stat.value}
             </div>
           </div>
@@ -96,7 +108,7 @@ function MyImpact({ data, currentPersonId }) {
 
       {/* Achievement Log */}
       {myAchievements.length > 0 ? (
-        <div style={{ backgroundColor: '#fff', borderRadius: '4px', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {myAchievements.map((achievement, idx) => {
             const commitLevel = getCommitLevel(achievement.commitId);
             const hrComments = data.hrComments.filter(
@@ -107,10 +119,16 @@ function MyImpact({ data, currentPersonId }) {
               <div
                 key={achievement.id}
                 style={{
-                  borderBottom: idx < myAchievements.length - 1 ? '0.5px solid #ddd' : 'none'
+                  padding: '16px',
+                  backgroundColor: '#fff',
+                  borderRadius: '8px',
+                  borderLeft: `4px solid ${COMMIT_COLORS[commitLevel] || '#ddd'}`,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                  animation: `slideInUp 0.4s ease-out ${idx * 0.08}s backwards`
                 }}
+                className="card-hover"
               >
-                <div style={{ display: 'flex', gap: '16px', padding: '16px' }}>
+                <div style={{ display: 'flex', gap: '16px' }}>
                   {/* Colored dot */}
                   <div
                     style={{

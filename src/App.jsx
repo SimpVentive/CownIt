@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { people, commits, achievements, monthlyUpdates, messages, hrComments } from './data/seed';
 import TopBar from './components/TopBar';
-import Sidebar from './components/Sidebar';
+import MobileNav from './components/MobileNav';
 import ContentArea from './components/ContentArea';
 import Auth from './pages/Auth';
+import Onboarding from './components/Onboarding';
+import './styles/animations.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentPhoneNumber, setCurrentPhoneNumber] = useState(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [currentUserName, setCurrentUserName] = useState('');
 
   const [state, setState] = useState({
     activeRole: 'individual',
@@ -26,9 +30,12 @@ function App() {
   });
 
   const handleLoginSuccess = (userId, phoneNumber) => {
+    const user = people.find(p => p.id === userId);
     setIsAuthenticated(true);
     setCurrentUserId(userId);
     setCurrentPhoneNumber(phoneNumber);
+    setCurrentUserName(user?.name || '');
+    setShowOnboarding(true);
     setState(prev => ({
       ...prev,
       currentUserId: userId
@@ -99,22 +106,33 @@ function App() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#f8f9fa' }}>
+      {showOnboarding && (
+        <Onboarding
+          userName={currentUserName}
+          onComplete={() => setShowOnboarding(false)}
+        />
+      )}
+
       <TopBar
         activeRole={state.activeRole}
         onRoleChange={handleRoleChange}
         currentUser={state.data.people.find(p => p.id === state.currentUserId)}
         onLogout={handleLogout}
       />
-      <div style={{ display: 'flex', flex: 1 }}>
-        <Sidebar activeRole={state.activeRole} activePage={state.activePage} onPageChange={handlePageChange} />
-        <ContentArea
-          state={state}
-          onNavigate={handlePageChange}
-          onSelectPerson={handleSelectPerson}
-          onDataChange={handleDataChange}
-        />
-      </div>
+
+      <ContentArea
+        state={state}
+        onNavigate={handlePageChange}
+        onSelectPerson={handleSelectPerson}
+        onDataChange={handleDataChange}
+      />
+
+      <MobileNav
+        activeRole={state.activeRole}
+        activePage={state.activePage}
+        onPageChange={handlePageChange}
+      />
     </div>
   );
 }

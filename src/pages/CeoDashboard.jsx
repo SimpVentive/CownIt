@@ -91,60 +91,71 @@ function CEODashboard({ data }) {
       <h2 style={{ marginBottom: '24px' }}>Dashboard</h2>
 
       {/* Stat Cards */}
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }}>
         {[
           {
             label: 'People committed',
             value: totalPeople,
-            sub: `across ${uniqueDepartments} department${uniqueDepartments !== 1 ? 's' : ''}`
+            sub: `across ${uniqueDepartments} department${uniqueDepartments !== 1 ? 's' : ''}`,
+            gradient: 'linear-gradient(135deg, #667BC6 0%, #5a5ba6 100%)'
           },
           {
             label: 'Total achievements',
             value: totalAchievements,
-            sub: 'since programme start'
+            sub: 'since programme start',
+            gradient: 'linear-gradient(135deg, #0F6E56 0%, #0a4a37 100%)'
           },
           {
             label: 'Avg impact score',
             value: avgImpact,
-            sub: 'self-rated / 10'
+            sub: 'self-rated / 10',
+            gradient: 'linear-gradient(135deg, #185FA5 0%, #0d3d66 100%)'
           },
           {
             label: 'Updated this month',
             value: updatedPct,
             sub: `${updatedCount} of ${totalPeople}`,
-            valueColor: getUpdatedPercentColor()
+            gradient: getUpdatedPercentColor() === '#28a745'
+              ? 'linear-gradient(135deg, #28a745 0%, #1e7e34 100%)'
+              : 'linear-gradient(135deg, #ffc107 0%, #e0a800 100%)'
           }
         ].map((stat, idx) => (
           <div
             key={idx}
             style={{
-              flex: 1,
-              padding: '16px',
-              backgroundColor: '#fff',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
+              flex: '1 1 calc(50% - 6px)',
+              minWidth: '160px',
+              padding: '20px',
+              background: stat.gradient,
+              borderRadius: '12px',
+              color: '#fff',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              animation: `slideInUp 0.5s ease-out ${idx * 0.1}s backwards`,
+              cursor: 'pointer'
             }}
+            className="card-hover"
           >
             <div
               style={{
                 fontSize: '12px',
-                color: SECONDARY_TEXT,
-                marginBottom: '8px'
+                opacity: 0.9,
+                marginBottom: '12px',
+                fontWeight: '500'
               }}
             >
               {stat.label}
             </div>
             <div
               style={{
-                fontSize: '28px',
+                fontSize: '32px',
                 fontWeight: '700',
-                marginBottom: '4px',
-                color: stat.valueColor || '#000'
+                marginBottom: '8px',
+                letterSpacing: '-0.5px'
               }}
             >
               {stat.value}
             </div>
-            <div style={{ fontSize: '11px', color: SECONDARY_TEXT }}>
+            <div style={{ fontSize: '11px', opacity: 0.85 }}>
               {stat.sub}
             </div>
           </div>
@@ -214,11 +225,11 @@ function CEODashboard({ data }) {
 
       {/* Recent Achievements */}
       <div>
-        <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>
-          Recent achievements
+        <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', color: '#333' }}>
+          🏆 Recent achievements
         </h3>
         {recentAchievements.length > 0 ? (
-          <div style={{ backgroundColor: '#fff', borderRadius: '4px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {recentAchievements.map((achievement, idx) => (
               <div
                 key={achievement.id}
@@ -227,9 +238,13 @@ function CEODashboard({ data }) {
                   gap: '16px',
                   alignItems: 'flex-start',
                   padding: '16px',
-                  borderBottom:
-                    idx < recentAchievements.length - 1 ? '1px solid #ddd' : 'none'
+                  backgroundColor: '#fff',
+                  borderRadius: '8px',
+                  borderLeft: `4px solid ${CPQSDP_COLORS[achievement.cpqsdp[0]] || '#ddd'}`,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                  animation: `slideInUp 0.5s ease-out ${idx * 0.08}s backwards`
                 }}
+                className="card-hover"
               >
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>

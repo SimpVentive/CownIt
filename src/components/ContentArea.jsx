@@ -62,7 +62,14 @@ function ContentArea({ state, onNavigate, onSelectPerson, onDataChange }) {
   const pageProps = getPageProps();
 
   return (
-    <div style={{ flex: 1, padding: '24px', overflow: 'auto' }}>
+    <div
+      style={{
+        flex: 1,
+        padding: '24px 16px 90px 16px',
+        overflow: 'auto',
+        animation: 'fadeIn 0.3s ease-out'
+      }}
+    >
       <Page {...pageProps} />
     </div>
   );
