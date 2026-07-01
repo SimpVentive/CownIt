@@ -1,173 +1,224 @@
 import React from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  ScrollView
+} from 'react-native';
 
 function computeHealthScore(personId, data) {
   let score = 0;
+  
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
-  const personCommits = data.commits.filter(c => c.personId === personId);
+  const personCommits = data.commits.filter(
+    c => c.personId === personId
+  );
+
   const filledLevels = new Set(personCommits.map(c => c.level));
   score += (filledLevels.size / 3) * 40;
 
   const hasUpdate = data.monthlyUpdates.some(
-    u => u.personId === personId && u.month === currentMonth && u.year === currentYear
+    u =>
+      u.personId === personId &&
+      u.month === currentMonth &&
+      u.year === currentYear
   );
+
   if (hasUpdate) score += 40;
 
   const hasAchievement = data.achievements.some(
-    a => a.personId === personId &&
-    new Date(a.date).getMonth() + 1 === currentMonth &&
-    new Date(a.date).getFullYear() === currentYear
+    a =>
+      a.personId === personId &&
+      new Date(a.date).getMonth() + 1 === currentMonth &&
+      new Date(a.date).getFullYear() === currentYear
   );
+
   if (hasAchievement) score += 20;
 
   return Math.round(score);
 }
 
-function People({ state, onSelectPerson }) {
+export default function People({ state }) {
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
-  const formatDate = (isoString) => {
-    if (!isoString) return 'Never';
+  const formatDate = isoString => {
+    if (!isoString) return 'No activity';
+
     return new Date(isoString).toLocaleDateString('en-US', {
       month: 'short',
-      day: '2-digit'
+      day: '2-digit',
+      year: 'numeric',
     });
   };
 
-  const peopleData = state.data.people.map(person => {
-    const score = computeHealthScore(person.id, state.data);
-    const hasUpdate = state.data.monthlyUpdates.some(
-      u => u.personId === person.id && u.month === currentMonth && u.year === currentYear
+  const getLastActive = personId => {
+    const updates = state.data.monthlyUpdates
+      .filter(u => u.personId === personId)
+      .map(u => new Date(u.updatedAt).getTime());
+
+    const achievements = state.data.achievements
+      .filter(a => a.personId === personId)
+      .map(a => new Date(a.date).getTime());
+
+    const dates = [...updates, ...achievements];
+
+    if (dates.length === 0) return 'No activity';
+
+    return formatDate(
+      new Date(Math.max(...dates)).toISOString()
     );
-    const lastUpdate = state.data.monthlyUpdates
-      .filter(u => u.personId === person.id)
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
-
-    return {
-      ...person,
-      score,
-      hasUpdate,
-      lastUpdate
-    };
-  });
-
-  const updatedCount = peopleData.filter(p => p.hasUpdate).length;
-  const avgScore = Math.round(peopleData.reduce((sum, p) => sum + p.score, 0) / peopleData.length);
+  };
 
   return (
-    <div>
-      <h2 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 500 }}>
-        People
-      </h2>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>People View</Text>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-        {[
-          { label: 'Total people', value: state.data.people.length },
-          { label: 'Updated this month', value: updatedCount, color: '#28a745' },
-          { label: 'Overdue', value: state.data.people.length - updatedCount, color: '#dc3545' },
-          { label: 'Avg health score', value: avgScore }
-        ].map((stat, idx) => (
-          <div
-            key={idx}
-            style={{
-              padding: '16px',
-              backgroundColor: '#fff',
-              border: '0.5px solid #e0e0e0',
-              borderRadius: '12px'
-            }}
-          >
-            <div style={{ fontSize: '12px', fontWeight: 400, color: '#666', marginBottom: '8px' }}>
-              {stat.label}
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: 500, color: stat.color || '#000' }}>
-              {stat.value}
-            </div>
-          </div>
-        ))}
-      </div>
+      {state.data.people.map(person => {
+        const commitCount = state.data.commits.filter(
+          c => c.personId === person.id
+        ).length;
 
-      {/* Table */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: '13px',
-          fontWeight: 400
-        }}>
-          <thead>
-            <tr style={{ borderBottom: '0.5px solid #e0e0e0' }}>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 500 }}>Name</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 500 }}>Department</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 500 }}>Last update</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 500 }}>Health score</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 500 }}>Status</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 500 }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {peopleData.map(person => (
-              <tr key={person.id} style={{ borderBottom: '0.5px solid #e0e0e0' }}>
-                <td style={{ padding: '12px' }}>{person.name}</td>
-                <td style={{ padding: '12px' }}>{person.department}</td>
-                <td style={{ padding: '12px' }}>{person.lastUpdate ? formatDate(person.lastUpdate.updatedAt) : 'Never'}</td>
-                <td style={{ padding: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>{person.score}/100</span>
-                    <div style={{
-                      width: '60px',
-                      height: '4px',
-                      backgroundColor: '#e0e0e0',
-                      borderRadius: '2px',
-                      overflow: 'hidden'
-                    }}>
-                      <div style={{
-                        height: '100%',
-                        width: `${person.score}%`,
-                        backgroundColor: person.score >= 75 ? '#28a745' : person.score >= 50 ? '#007bff' : '#dc3545'
-                      }} />
-                    </div>
-                  </div>
-                </td>
-                <td style={{ padding: '12px' }}>
-                  <div style={{
-                    display: 'inline-block',
-                    padding: '4px 10px',
-                    backgroundColor: person.hasUpdate ? '#d4edda' : '#f8d7da',
-                    color: person.hasUpdate ? '#28a745' : '#dc3545',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: 500
-                  }}>
-                    {person.hasUpdate ? 'Current' : 'Overdue'}
-                  </div>
-                </td>
-                <td style={{ padding: '12px' }}>
-                  <button
-                    onClick={() => onSelectPerson(person.id)}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#000',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                      fontWeight: 400,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    View
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+        const achievementCount = state.data.achievements.filter(
+          a => a.personId === person.id
+        ).length;
+
+        const healthScore = computeHealthScore(
+          person.id,
+          state.data
+        );
+
+        const isUpdated = state.data.monthlyUpdates.some(
+          u =>
+            u.personId === person.id &&
+            u.month === currentMonth &&
+            u.year === currentYear
+        );
+
+        return (
+          <View key={person.id} style={styles.card}>
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.name}>
+                  {person.name}
+                </Text>
+
+                <Text style={styles.department}>
+                  {person.department}
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: isUpdated
+                      ? '#d4edda'
+                      : '#f8d7da',
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusText,
+                    {
+                      color: isUpdated
+                        ? '#28a745'
+                        : '#dc3545',
+                    },
+                  ]}
+                >
+                  {isUpdated ? 'Current' : 'Overdue'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <Text style={styles.info}>
+              Commits: {commitCount}
+            </Text>
+
+            <Text style={styles.info}>
+              Achievements: {achievementCount}
+            </Text>
+
+            <Text style={styles.info}>
+              Health Score: {healthScore}/100
+            </Text>
+
+            <Text style={styles.info}>
+              Last Active: {getLastActive(person.id)}
+            </Text>
+          </View>
+        );
+      })}
+    </ScrollView>
   );
 }
 
-export default People;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 20,
+  },
+
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 16,
+    marginBottom: 16,
+  },
+
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+
+  name: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+
+  department: {
+    marginTop: 4,
+    color: '#666',
+    fontSize: 14,
+  },
+
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+
+  statusText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  divider: {
+    marginVertical: 14,
+    height: 1,
+    backgroundColor: '#e5e5e5',
+  },
+
+  info: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 6,
+  },
+});

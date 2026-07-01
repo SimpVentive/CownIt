@@ -1,4 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
 
 function Reminders({ state, onDataChange }) {
   const [sentIds, setSentIds] = useState([]);
@@ -6,180 +13,205 @@ function Reminders({ state, onDataChange }) {
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
-  const overduepeople = state.data.people.filter(p =>
-    !state.data.monthlyUpdates.some(u =>
-      u.personId === p.id && u.month === currentMonth && u.year === currentYear
-    )
+  const overduePeople = state.data.people.filter(
+    (p) =>
+      !state.data.monthlyUpdates.some(
+        (u) =>
+          u.personId === p.id &&
+          u.month === currentMonth &&
+          u.year === currentYear
+      )
   );
 
-  const formatDate = (isoString) => {
-    if (!isoString) return 'Never';
-    return new Date(isoString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: '2-digit'
+  const formatDate = (date) => {
+    if (!date) return "Never";
+
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
     });
   };
 
   const getLastUpdateDate = (personId) => {
-    const lastUpdate = state.data.monthlyUpdates
-      .filter(u => u.personId === personId)
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
-    return lastUpdate ? formatDate(lastUpdate.updatedAt) : 'Never';
+    const updates = state.data.monthlyUpdates
+      .filter((u) => u.personId === personId)
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+    return updates.length ? formatDate(updates[0].updatedAt) : "Never";
   };
 
   const sendReminder = (personId) => {
-    const newMessage = {
-      id: 'msg' + Date.now(),
-      fromRole: 'hr',
-      fromName: 'HR',
+    const msg = {
+      id: "msg" + Date.now(),
+      fromRole: "hr",
+      fromName: "HR",
       toPersonId: personId,
-      body: 'Your monthly commit update is overdue. Please log your progress and at least one achievement before end of this month.',
+      body:
+        "Your monthly commit update is overdue. Please update before month end.",
       date: new Date().toISOString(),
-      read: false
+      read: false,
     };
 
-    onDataChange('messages', [...state.data.messages, newMessage]);
+    onDataChange("messages", [...state.data.messages, msg]);
     setSentIds([...sentIds, personId]);
   };
 
   const sendToAll = () => {
-    const newMessages = overduepeople
-      .filter(p => !sentIds.includes(p.id))
-      .map(person => ({
-        id: 'msg' + Date.now() + Math.random(),
-        fromRole: 'hr',
-        fromName: 'HR',
-        toPersonId: person.id,
-        body: 'Your monthly commit update is overdue. Please log your progress and at least one achievement before end of this month.',
+    const msgs = overduePeople
+      .filter((p) => !sentIds.includes(p.id))
+      .map((p) => ({
+        id: "msg" + Date.now() + Math.random(),
+        fromRole: "hr",
+        fromName: "HR",
+        toPersonId: p.id,
+        body:
+          "Your monthly commit update is overdue. Please update before month end.",
         date: new Date().toISOString(),
-        read: false
+        read: false,
       }));
 
-    onDataChange('messages', [...state.data.messages, ...newMessages]);
-    setSentIds(overduepeople.map(p => p.id));
+    onDataChange("messages", [...state.data.messages, ...msgs]);
+    setSentIds(overduePeople.map((p) => p.id));
   };
 
-  if (overduepeople.length === 0) {
-    return (
-      <div>
-        <h2 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 500 }}>
-          Reminders
-        </h2>
-        <div style={{
-          padding: '16px',
-          backgroundColor: '#d4edda',
-          color: '#28a745',
-          borderRadius: '12px',
-          fontSize: '13px',
-          fontWeight: 400
-        }}>
-          All individuals are up to date for this month.
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <h2 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 500 }}>
-        Reminders
-      </h2>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Reminders</Text>
 
-      <div style={{
-        padding: '12px 16px',
-        backgroundColor: '#fff3cd',
-        color: '#856404',
-        borderRadius: '12px',
-        marginBottom: '24px',
-        fontSize: '13px',
-        fontWeight: 400
-      }}>
-        {overduepeople.length} people overdue for this month's update
-      </div>
+      {overduePeople.length === 0 ? (
+        <View style={styles.successBox}>
+          <Text style={styles.successText}>
+            All individuals are up to date.
+          </Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.warningBox}>
+            <Text style={styles.warningText}>
+              {overduePeople.length} people overdue this month
+            </Text>
+          </View>
 
-      {/* List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '32px' }}>
-        {overduepeople.map(person => (
-          <div
-            key={person.id}
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px',
-              backgroundColor: '#fff3cd',
-              border: '0.5px solid #ffeaa7',
-              borderRadius: '12px'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 500, color: '#000', marginBottom: '4px' }}>
-                {person.name}
-              </div>
-              <div style={{ fontSize: '12px', color: '#666' }}>
-                {person.department} · Last updated {getLastUpdateDate(person.id)}
-              </div>
-            </div>
+          {overduePeople.map((person) => (
+            <View key={person.id} style={styles.card}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{person.name}</Text>
 
-            <div>
+                <Text style={styles.info}>
+                  {person.department} • Last updated{" "}
+                  {getLastUpdateDate(person.id)}
+                </Text>
+              </View>
+
               {sentIds.includes(person.id) ? (
-                <div style={{ fontSize: '13px', fontWeight: 400, color: '#28a745' }}>
-                  Sent
-                </div>
+                <Text style={styles.sent}>Sent</Text>
               ) : (
-                <button
-                  onClick={() => sendReminder(person.id)}
-                  style={{
-                    padding: '8px 14px',
-                    backgroundColor: '#007bff',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: 400,
-                    cursor: 'pointer'
-                  }}
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => sendReminder(person.id)}
                 >
-                  Send reminder
-                </button>
+                  <Text style={styles.buttonText}>Send</Text>
+                </TouchableOpacity>
               )}
-            </div>
-          </div>
-        ))}
-      </div>
+            </View>
+          ))}
 
-      {/* Bulk Action */}
-      <div style={{
-        padding: '16px',
-        backgroundColor: '#f9f9f9',
-        border: '0.5px solid #e0e0e0',
-        borderRadius: '12px'
-      }}>
-        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px' }}>
-          Send to all overdue
-        </div>
-        <div style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
-          Send a reminder message to all {overduepeople.length} overdue individuals at once.
-        </div>
-        <button
-          onClick={sendToAll}
-          disabled={sentIds.length === overduepeople.length}
-          style={{
-            padding: '10px 16px',
-            backgroundColor: sentIds.length === overduepeople.length ? '#ccc' : '#000',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontWeight: 400,
-            cursor: sentIds.length === overduepeople.length ? 'not-allowed' : 'pointer'
-          }}
-        >
-          Send to all
-        </button>
-      </div>
-    </div>
+          <TouchableOpacity
+            style={[
+              styles.bulkButton,
+              sentIds.length === overduePeople.length && {
+                backgroundColor: "#999",
+              },
+            ]}
+            disabled={sentIds.length === overduePeople.length}
+            onPress={sendToAll}
+          >
+            <Text style={styles.buttonText}>Send To All</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 20,
+  },
+
+  successBox: {
+    backgroundColor: "#d4edda",
+    padding: 15,
+    borderRadius: 10,
+  },
+
+  successText: {
+    color: "#155724",
+  },
+
+  warningBox: {
+    backgroundColor: "#fff3cd",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+
+  warningText: {
+    color: "#856404",
+    fontWeight: "600",
+  },
+
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 12,
+    elevation: 2,
+  },
+
+  name: {
+    fontWeight: "700",
+    fontSize: 16,
+  },
+
+  info: {
+    color: "#666",
+    marginTop: 4,
+  },
+
+  button: {
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+
+  bulkButton: {
+    backgroundColor: "#000",
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 15,
+    alignItems: "center",
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+
+  sent: {
+    color: "green",
+    fontWeight: "600",
+  },
+});
 
 export default Reminders;

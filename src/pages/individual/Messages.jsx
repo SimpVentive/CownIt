@@ -1,4 +1,10 @@
 import React from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet
+} from 'react-native';
 
 function Messages({ state }) {
   const userMessages = state.data.messages
@@ -9,59 +15,103 @@ function Messages({ state }) {
     return new Date(isoString).toLocaleDateString('en-US', {
       month: 'short',
       day: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
   return (
-    <div>
-      <h2 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 500 }}>
-        Messages
-      </h2>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={styles.heading}>Messages</Text>
 
       {userMessages.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {userMessages.map(message => (
-            <div
-              key={message.id}
-              style={{
-                padding: '16px',
-                backgroundColor: '#fff',
-                border: '0.5px solid #e0e0e0',
-                borderRadius: '12px'
-              }}
-            >
-              <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: '#000' }}>
-                From: {message.fromName} ({message.fromRole.toUpperCase()})
-              </div>
+        userMessages.map((message) => (
+          <View
+            key={message.id}
+            style={styles.card}
+          >
+            <Text style={styles.sender}>
+              From: {message.fromName} ({message.fromRole.toUpperCase()})
+            </Text>
 
-              <div style={{ fontSize: '13px', fontWeight: 400, color: '#333', marginBottom: '12px', lineHeight: '1.5' }}>
-                {message.body}
-              </div>
+            <Text style={styles.message}>
+              {message.body}
+            </Text>
 
-              <div style={{ fontSize: '12px', color: '#999' }}>
-                {formatDate(message.date)}
-                {message.read && ' · Read'}
-              </div>
-            </div>
-          ))}
-        </div>
+            <Text style={styles.date}>
+              {formatDate(message.date)}
+              {message.read ? ' • Read' : ''}
+            </Text>
+          </View>
+        ))
       ) : (
-        <div style={{
-          padding: '32px',
-          textAlign: 'center',
-          backgroundColor: '#fff',
-          border: '0.5px solid #e0e0e0',
-          borderRadius: '12px',
-          color: '#999',
-          fontSize: '13px',
-          fontWeight: 400
-        }}>
-          No messages yet
-        </div>
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>
+            No messages yet
+          </Text>
+        </View>
       )}
-    </div>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 16,
+  },
+
+  heading: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 24,
+    color: '#000',
+  },
+
+  card: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+
+  sender: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 8,
+  },
+
+  message: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+
+  date: {
+    fontSize: 12,
+    color: '#999',
+  },
+
+  emptyCard: {
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 12,
+    paddingVertical: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  emptyText: {
+    fontSize: 14,
+    color: '#999',
+  },
+});
 
 export default Messages;

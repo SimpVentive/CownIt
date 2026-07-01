@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload } from 'lucide-react-native';
+import { Picker } from '@react-native-picker/picker';
+import * as DocumentPicker from 'expo-document-picker';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
 
 const CPQSDP_DIMS = [
   { key: 'C', label: 'Cost', color: '#534AB7' },
@@ -37,6 +47,17 @@ function LogAchievement({ state, onDataChange }) {
     return Object.keys(newErrors).length === 0;
   };
 
+  const pickDocument = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+
+    if (!result.canceled) {
+      setFile(result.assets[0]);
+    }
+  };
+
   const handleSave = () => {
     if (!validate()) return;
 
@@ -66,238 +87,330 @@ function LogAchievement({ state, onDataChange }) {
   };
 
   return (
-    <div style={{ maxWidth: '600px' }}>
-      <h2 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 500 }}>
-        Log achievement
-      </h2>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{
+        padding: 20,
+        paddingBottom: 40,
+      }}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text
+        style={{
+          fontSize: 22,
+          fontWeight: '700',
+          marginBottom: 24,
+        }}
+      >
+        Log Achievement
+      </Text>
 
       {/* Title */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
+      <View style={{ marginBottom: 20 }}>
+        <Text style={{ marginBottom: 8, fontWeight: '600' }}>
           What did you achieve?
-        </label>
-        <input
-          type="text"
+        </Text>
+
+        <TextInput
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChangeText={setTitle}
           placeholder="Brief title"
           style={{
-            width: '100%',
-            padding: '10px 12px',
-            border: `0.5px solid ${errors.title ? '#dc3545' : '#e0e0e0'}`,
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontWeight: 400,
-            boxSizing: 'border-box'
+            borderWidth: 1,
+            borderColor: errors.title ? '#dc3545' : '#ddd',
+            borderRadius: 8,
+            padding: 12,
           }}
         />
-        {errors.title && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{errors.title}</div>}
-      </div>
+
+        {errors.title && (
+          <Text style={{ color: '#dc3545', marginTop: 5 }}>
+            {errors.title}
+          </Text>
+        )}
+      </View>
 
       {/* Commitment Level */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
-          Commitment level
-        </label>
-        <div style={{ display: 'flex', gap: '8px' }}>
+      <View style={{ marginBottom: 20 }}>
+        <Text style={{ marginBottom: 10, fontWeight: '600' }}>
+          Commitment Level
+        </Text>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+          }}
+        >
           {['self', 'team', 'org'].map(level => (
-            <button
+            <Pressable
               key={level}
-              onClick={() => {
+              onPress={() => {
                 setSelectedLevel(level);
                 setSelectedCommitId(null);
               }}
               style={{
                 flex: 1,
-                padding: '10px',
-                backgroundColor: selectedLevel === level ? '#000' : '#f5f5f5',
-                color: selectedLevel === level ? '#fff' : '#000',
-                border: '0.5px solid #e0e0e0',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 400,
-                cursor: 'pointer'
+                marginHorizontal: 3,
+                paddingVertical: 12,
+                borderRadius: 8,
+                backgroundColor:
+                  selectedLevel === level ? '#000' : '#f5f5f5',
+                alignItems: 'center',
               }}
             >
-              {level === 'self' ? 'Self' : level === 'team' ? 'Team / Dept' : 'Organisation'}
-            </button>
+              <Text
+                style={{
+                  color:
+                    selectedLevel === level ? '#fff' : '#000',
+                }}
+              >
+                {level === 'self'
+                  ? 'Self'
+                  : level === 'team'
+                  ? 'Team / Dept'
+                  : 'Organisation'}
+              </Text>
+            </Pressable>
           ))}
-        </div>
-        {errors.level && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{errors.level}</div>}
-      </div>
+        </View>
 
-      {/* Linked Commit */}
+        {errors.level && (
+          <Text style={{ color: '#dc3545', marginTop: 5 }}>
+            {errors.level}
+          </Text>
+        )}
+      </View>
+
+      {/* Commit Picker */}
       {selectedLevel && (
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
-            Select a commit
-          </label>
-          <select
-            value={selectedCommitId || ''}
-            onChange={(e) => setSelectedCommitId(e.target.value)}
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ marginBottom: 8, fontWeight: '600' }}>
+            Select Commit
+          </Text>
+
+          <View
             style={{
-              width: '100%',
-              padding: '10px 12px',
-              border: `0.5px solid ${errors.commit ? '#dc3545' : '#e0e0e0'}`,
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 400,
-              boxSizing: 'border-box'
+              borderWidth: 1,
+              borderColor: '#ddd',
+              borderRadius: 8,
             }}
           >
-            <option value="">Choose a commit...</option>
-            {levelCommits.map(commit => (
-              <option key={commit.id} value={commit.id}>
-                {commit.statement.substring(0, 50)}...
-              </option>
-            ))}
-          </select>
-          {errors.commit && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{errors.commit}</div>}
-        </div>
+            <Picker
+              selectedValue={selectedCommitId}
+              onValueChange={setSelectedCommitId}
+            >
+              <Picker.Item
+                label="Choose a commit..."
+                value={null}
+              />
+
+              {levelCommits.map(commit => (
+                <Picker.Item
+                  key={commit.id}
+                  label={commit.statement.substring(0, 50)}
+                  value={commit.id}
+                />
+              ))}
+            </Picker>
+          </View>
+
+          {errors.commit && (
+            <Text style={{ color: '#dc3545', marginTop: 5 }}>
+              {errors.commit}
+            </Text>
+          )}
+        </View>
       )}
 
       {/* Evidence */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
-          Evidence / notes
-        </label>
-        <textarea
+      <View style={{ marginBottom: 20 }}>
+        <Text style={{ marginBottom: 8, fontWeight: '600' }}>
+          Evidence / Notes
+        </Text>
+
+        <TextInput
           value={evidence}
-          onChange={(e) => setEvidence(e.target.value)}
-          placeholder="What happened, when, who was involved, outcome..."
+          onChangeText={setEvidence}
+          multiline
+          numberOfLines={5}
+          textAlignVertical="top"
+          placeholder="Describe your achievement..."
           style={{
-            width: '100%',
-            minHeight: '80px',
-            padding: '10px 12px',
-            border: `0.5px solid ${errors.evidence ? '#dc3545' : '#e0e0e0'}`,
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontWeight: 400,
-            boxSizing: 'border-box',
-            fontFamily: 'inherit',
-            resize: 'vertical'
+            borderWidth: 1,
+            borderColor: errors.evidence ? '#dc3545' : '#ddd',
+            borderRadius: 8,
+            padding: 12,
+            minHeight: 120,
           }}
         />
-        {errors.evidence && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{errors.evidence}</div>}
-      </div>
 
-      {/* File */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
-          File attachment (optional)
-        </label>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <label style={{ cursor: 'pointer' }}>
-            <input
-              type="file"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              style={{ display: 'none' }}
-            />
-            <div style={{
-              padding: '10px 12px',
-              backgroundColor: '#f5f5f5',
-              border: '0.5px solid #e0e0e0',
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 400,
-              cursor: 'pointer',
-              display: 'flex',
-              gap: '8px',
-              alignItems: 'center'
-            }}>
-              <Upload size={16} />
-              Choose file
-            </div>
-          </label>
-          {file && <span style={{ fontSize: '13px', color: '#666' }}>{file.name}</span>}
-        </div>
-      </div>
+        {errors.evidence && (
+          <Text style={{ color: '#dc3545', marginTop: 5 }}>
+            {errors.evidence}
+          </Text>
+        )}
+      </View>
 
-      {/* CPQSDP Dimensions */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
-          Impact dimensions
-        </label>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      {/* File Upload */}
+      <View style={{ marginBottom: 20 }}>
+        <Text style={{ marginBottom: 8, fontWeight: '600' }}>
+          File Attachment
+        </Text>
+
+        <Pressable
+          onPress={pickDocument}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#f5f5f5',
+            padding: 12,
+            borderRadius: 8,
+          }}
+        >
+          <Upload size={18} />
+
+          <Text style={{ marginLeft: 10 }}>
+            {file ? file.name : 'Choose File'}
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* CPQSDP */}
+      <View style={{ marginBottom: 20 }}>
+        <Text style={{ marginBottom: 10, fontWeight: '600' }}>
+          Impact Dimensions
+        </Text>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+          }}
+        >
           {CPQSDP_DIMS.map(dim => (
-            <button
+            <Pressable
               key={dim.key}
-              onClick={() => {
+              onPress={() => {
                 setSelectedDims(
                   selectedDims.includes(dim.key)
-                    ? selectedDims.filter(d => d !== dim.key)
+                    ? selectedDims.filter(
+                        d => d !== dim.key
+                      )
                     : [...selectedDims, dim.key]
                 );
               }}
               style={{
-                padding: '8px 12px',
-                backgroundColor: selectedDims.includes(dim.key) ? dim.color : '#f5f5f5',
-                color: selectedDims.includes(dim.key) ? '#fff' : '#000',
-                border: `0.5px solid ${selectedDims.includes(dim.key) ? dim.color : '#e0e0e0'}`,
-                borderRadius: '8px',
-                fontSize: '12px',
-                fontWeight: 400,
-                cursor: 'pointer'
+                margin: 4,
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+                borderRadius: 20,
+                backgroundColor: selectedDims.includes(dim.key)
+                  ? dim.color
+                  : '#f5f5f5',
               }}
             >
-              {dim.key} — {dim.label}
-            </button>
+              <Text
+                style={{
+                  color: selectedDims.includes(dim.key)
+                    ? '#fff'
+                    : '#000',
+                }}
+              >
+                {dim.key} - {dim.label}
+              </Text>
+            </Pressable>
           ))}
-        </div>
-        {errors.dims && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{errors.dims}</div>}
-      </div>
+        </View>
+
+        {errors.dims && (
+          <Text style={{ color: '#dc3545' }}>
+            {errors.dims}
+          </Text>
+        )}
+      </View>
 
       {/* Impact Rating */}
-      <div style={{ marginBottom: '24px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
-          Impact rating
-        </label>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-            <button
+      <View style={{ marginBottom: 25 }}>
+        <Text style={{ marginBottom: 10, fontWeight: '600' }}>
+          Impact Rating
+        </Text>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+          }}
+        >
+          {[1,2,3,4,5,6,7,8,9,10].map(num => (
+            <Pressable
               key={num}
-              onClick={() => setImpactRating(num)}
+              onPress={() => setImpactRating(num)}
               style={{
-                width: '32px',
-                height: '32px',
-                padding: 0,
-                backgroundColor: impactRating === num ? '#000' : '#f5f5f5',
-                color: impactRating === num ? '#fff' : '#000',
-                border: '0.5px solid #e0e0e0',
-                borderRadius: '8px',
-                fontSize: '12px',
-                fontWeight: 400,
-                cursor: 'pointer'
+                width: 40,
+                height: 40,
+                margin: 4,
+                borderRadius: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor:
+                  impactRating === num
+                    ? '#000'
+                    : '#eee',
               }}
             >
-              {num}
-            </button>
+              <Text
+                style={{
+                  color:
+                    impactRating === num
+                      ? '#fff'
+                      : '#000',
+                }}
+              >
+                {num}
+              </Text>
+            </Pressable>
           ))}
-        </div>
-        <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>
-          1–3 Minor · 4–6 Moderate · 7–8 Significant · 9–10 Transformational
-        </div>
-        {errors.rating && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{errors.rating}</div>}
-      </div>
+        </View>
 
-      {/* Save Button */}
-      <button
-        onClick={handleSave}
+        <Text
+          style={{
+            marginTop: 10,
+            color: '#777',
+            fontSize: 12,
+          }}
+        >
+          1–3 Minor • 4–6 Moderate • 7–8 Significant • 9–10 Transformational
+        </Text>
+
+        {errors.rating && (
+          <Text style={{ color: '#dc3545' }}>
+            {errors.rating}
+          </Text>
+        )}
+      </View>
+
+      {/* Save */}
+      <Pressable
+        onPress={handleSave}
         style={{
-          width: '100%',
-          padding: '12px',
           backgroundColor: '#000',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontWeight: 500,
-          cursor: 'pointer'
+          paddingVertical: 16,
+          borderRadius: 10,
+          alignItems: 'center',
         }}
       >
-        Save achievement
-      </button>
-    </div>
+        <Text
+          style={{
+            color: '#fff',
+            fontWeight: '700',
+            fontSize: 16,
+          }}
+        >
+          Save Achievement
+        </Text>
+      </Pressable>
+    </ScrollView>
   );
 }
 

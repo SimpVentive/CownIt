@@ -1,175 +1,310 @@
-import React from 'react';
+import React from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
 
 const CPQSDP_LABELS = {
-  C: 'Cost',
-  P: 'Productivity',
-  Q: 'Quality',
-  S: 'Safety',
-  D: 'Delivery',
-  O: 'People'
-};
-
-const CPQSDP_COLORS = {
-  C: '#534AB7',
-  P: '#0F6E56',
-  Q: '#3B6D11',
-  S: '#993C1D',
-  D: '#185FA5',
-  O: '#854F0B'
+  C: "Cost",
+  P: "Productivity",
+  Q: "Quality",
+  S: "Safety",
+  D: "Delivery",
+  O: "People",
 };
 
 function getColor(score) {
-  if (score === null) return { bg: '#f5f5f5', text: '#999' };
-  if (score >= 8) return { bg: '#e8f5e9', text: '#2e7d32' };
-  if (score >= 6) return { bg: '#e3f2fd', text: '#1565c0' };
-  if (score >= 4) return { bg: '#fff3e0', text: '#e65100' };
-  return { bg: '#ffebee', text: '#c62828' };
+  if (score === null)
+    return { bg: "#f5f5f5", text: "#999" };
+
+  if (score >= 8)
+    return { bg: "#e8f5e9", text: "#2e7d32" };
+
+  if (score >= 6)
+    return { bg: "#e3f2fd", text: "#1565c0" };
+
+  if (score >= 4)
+    return { bg: "#fff3e0", text: "#e65100" };
+
+  return { bg: "#ffebee", text: "#c62828" };
 }
 
-function Heatmap({ state }) {
+export default function Heatmap({ state }) {
   const personDimensionScore = (personId, dimension) => {
     const achievements = state.data.achievements.filter(
-      a => a.personId === personId && a.cpqsdp.includes(dimension)
+      (a) =>
+        a.personId === personId &&
+        a.cpqsdp.includes(dimension)
     );
-    if (achievements.length === 0) return null;
-    return parseFloat((
-      achievements.reduce((sum, a) => sum + a.impactRating, 0) / achievements.length
-    ).toFixed(1));
+
+    if (!achievements.length) return null;
+
+    return Number(
+      (
+        achievements.reduce(
+          (sum, a) => sum + a.impactRating,
+          0
+        ) / achievements.length
+      ).toFixed(1)
+    );
   };
 
   const orgAvg = (dimension) => {
-    const achievements = state.data.achievements.filter(a => a.cpqsdp.includes(dimension));
-    if (achievements.length === 0) return null;
-    return parseFloat((
-      achievements.reduce((sum, a) => sum + a.impactRating, 0) / achievements.length
-    ).toFixed(1));
+    const achievements =
+      state.data.achievements.filter((a) =>
+        a.cpqsdp.includes(dimension)
+      );
+
+    if (!achievements.length) return null;
+
+    return Number(
+      (
+        achievements.reduce(
+          (sum, a) => sum + a.impactRating,
+          0
+        ) / achievements.length
+      ).toFixed(1)
+    );
   };
 
   return (
-    <div>
-      <h2 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 500 }}>
-        Impact heatmap
-      </h2>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>
+        Impact Heatmap
+      </Text>
 
-      {/* Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'auto repeat(6, 1fr)',
-        gap: '4px',
-        backgroundColor: '#fff',
-        padding: '16px',
-        borderRadius: '12px',
-        border: '0.5px solid #e0e0e0',
-        overflowX: 'auto'
-      }}>
-        {/* Header */}
-        <div />
-        {Object.entries(CPQSDP_LABELS).map(([key, label]) => (
-          <div
-            key={key}
-            style={{
-              padding: '8px',
-              fontSize: '11px',
-              fontWeight: 500,
-              textAlign: 'center',
-              color: '#666'
-            }}
-            title={label}
-          >
-            {key}
-          </div>
-        ))}
+      <ScrollView horizontal>
+        <View style={styles.table}>
+          {/* Header */}
+          <View style={styles.row}>
+            <View style={styles.nameCell} />
 
-        {/* Person rows */}
-        {state.data.people.map(person => (
-          <React.Fragment key={person.id}>
-            <div style={{ padding: '8px', fontSize: '12px', fontWeight: 400 }}>
-              {person.name.split(' ')[0]}
-            </div>
-            {Object.keys(CPQSDP_LABELS).map(dim => {
-              const score = personDimensionScore(person.id, dim);
-              const color = getColor(score);
+            {Object.keys(CPQSDP_LABELS).map((dim) => (
+              <View
+                key={dim}
+                style={styles.headerCell}
+              >
+                <Text style={styles.headerText}>
+                  {dim}
+                </Text>
+              </View>
+            ))}
+          </View>
 
-              return (
-                <div
-                  key={`${person.id}-${dim}`}
-                  style={{
-                    padding: '12px 4px',
-                    backgroundColor: color.bg,
-                    color: color.text,
-                    borderRadius: '4px',
-                    textAlign: 'center',
-                    fontSize: '11px',
-                    fontWeight: 500,
-                    minHeight: '28px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  {score || '—'}
-                </div>
-              );
-            })}
-          </React.Fragment>
-        ))}
-
-        {/* Separator */}
-        <div style={{ gridColumn: '1 / -1', height: '1px', backgroundColor: '#e0e0e0' }} />
-
-        {/* Org avg row */}
-        <div style={{ padding: '8px', fontSize: '12px', fontWeight: 500 }}>
-          Org avg
-        </div>
-        {Object.keys(CPQSDP_LABELS).map(dim => {
-          const score = orgAvg(dim);
-          const color = getColor(score);
-
-          return (
-            <div
-              key={`avg-${dim}`}
-              style={{
-                padding: '12px 4px',
-                backgroundColor: color.bg,
-                color: color.text,
-                borderRadius: '4px',
-                textAlign: 'center',
-                fontSize: '11px',
-                fontWeight: 600,
-                minHeight: '28px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
+          {/* People */}
+          {state.data.people.map((person) => (
+            <View
+              style={styles.row}
+              key={person.id}
             >
-              {score || '—'}
-            </div>
-          );
-        })}
-      </div>
+              <View style={styles.nameCell}>
+                <Text style={styles.personName}>
+                  {person.name.split(" ")[0]}
+                </Text>
+              </View>
+
+              {Object.keys(CPQSDP_LABELS).map(
+                (dim) => {
+                  const score =
+                    personDimensionScore(
+                      person.id,
+                      dim
+                    );
+
+                  const color =
+                    getColor(score);
+
+                  return (
+                    <View
+                      key={dim}
+                      style={[
+                        styles.scoreCell,
+                        {
+                          backgroundColor:
+                            color.bg,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          color: color.text,
+                          fontWeight: "600",
+                        }}
+                      >
+                        {score ?? "—"}
+                      </Text>
+                    </View>
+                  );
+                }
+              )}
+            </View>
+          ))}
+
+          {/* Average */}
+          <View
+            style={[
+              styles.row,
+              { marginTop: 8 },
+            ]}
+          >
+            <View style={styles.nameCell}>
+              <Text
+                style={{
+                  fontWeight: "bold",
+                }}
+              >
+                Org Avg
+              </Text>
+            </View>
+
+            {Object.keys(CPQSDP_LABELS).map(
+              (dim) => {
+                const score = orgAvg(dim);
+                const color =
+                  getColor(score);
+
+                return (
+                  <View
+                    key={dim}
+                    style={[
+                      styles.scoreCell,
+                      {
+                        backgroundColor:
+                          color.bg,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: color.text,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {score ?? "—"}
+                    </Text>
+                  </View>
+                );
+              }
+            )}
+          </View>
+        </View>
+      </ScrollView>
 
       {/* Legend */}
-      <div style={{ marginTop: '24px', display: 'flex', gap: '24px', fontSize: '12px' }}>
+
+      <View style={styles.legend}>
         {[
-          { bg: '#e8f5e9', label: '8–10 High' },
-          { bg: '#e3f2fd', label: '6–7 Good' },
-          { bg: '#fff3e0', label: '4–5 Moderate' },
-          { bg: '#ffebee', label: '1–3 Low' }
-        ].map((item, idx) => (
-          <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <div style={{
-              width: '12px',
-              height: '12px',
-              borderRadius: '3px',
-              backgroundColor: item.bg,
-              border: '0.5px solid #e0e0e0'
-            }} />
-            <span style={{ color: '#666' }}>{item.label}</span>
-          </div>
+          {
+            bg: "#e8f5e9",
+            label: "8-10 High",
+          },
+          {
+            bg: "#e3f2fd",
+            label: "6-7 Good",
+          },
+          {
+            bg: "#fff3e0",
+            label: "4-5 Moderate",
+          },
+          {
+            bg: "#ffebee",
+            label: "1-3 Low",
+          },
+        ].map((item) => (
+          <View
+            key={item.label}
+            style={styles.legendItem}
+          >
+            <View
+              style={[
+                styles.legendBox,
+                {
+                  backgroundColor:
+                    item.bg,
+                },
+              ]}
+            />
+            <Text>{item.label}</Text>
+          </View>
         ))}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   );
 }
 
-export default Heatmap;
+const CELL_WIDTH = 70;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#f5f5f5",
+  },
+
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 20,
+  },
+
+  table: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+    elevation: 2,
+  },
+
+  row: {
+    flexDirection: "row",
+    marginBottom: 4,
+    alignItems: "center",
+  },
+
+  nameCell: {
+    width: 110,
+    padding: 8,
+  },
+
+  personName: {
+    fontWeight: "500",
+  },
+
+  headerCell: {
+    width: CELL_WIDTH,
+    alignItems: "center",
+    padding: 8,
+  },
+
+  headerText: {
+    fontWeight: "700",
+    color: "#666",
+  },
+
+  scoreCell: {
+    width: CELL_WIDTH,
+    height: 40,
+    marginHorizontal: 2,
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  legend: {
+    marginTop: 24,
+  },
+
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  legendBox: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    marginRight: 10,
+  },
+});

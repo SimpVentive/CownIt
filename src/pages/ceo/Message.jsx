@@ -1,25 +1,33 @@
 import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 
-function Message({ state, onDataChange }) {
-  const [recipientId, setRecipientId] = useState(state.data.people[0]?.id || '');
+export default function Message({ state, onDataChange }) {
+  const [recipientId, setRecipientId] = useState(
+    state.data.people[0]?.id || ''
+  );
   const [messageBody, setMessageBody] = useState('');
   const [sent, setSent] = useState(false);
 
-  const formatDate = (isoString) => {
-    return new Date(isoString).toLocaleDateString('en-US', {
+  const formatDate = iso =>
+    new Date(iso).toLocaleDateString('en-US', {
       month: 'short',
       day: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     });
-  };
 
-  const getPersonName = (personId) => {
-    return state.data.people.find(p => p.id === personId)?.name || 'Unknown';
-  };
+  const getPersonName = id =>
+    state.data.people.find(p => p.id === id)?.name || 'Unknown';
 
-  const getPersonDept = (personId) => {
-    return state.data.people.find(p => p.id === personId)?.department || '';
-  };
+  const getPersonDept = id =>
+    state.data.people.find(p => p.id === id)?.department || '';
 
   const handleSend = () => {
     if (messageBody.trim().length < 5) return;
@@ -31,10 +39,11 @@ function Message({ state, onDataChange }) {
       toPersonId: recipientId,
       body: messageBody.trim(),
       date: new Date().toISOString(),
-      read: false
+      read: false,
     };
 
     onDataChange('messages', [...state.data.messages, newMessage]);
+
     setMessageBody('');
     setSent(true);
 
@@ -46,129 +55,187 @@ function Message({ state, onDataChange }) {
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
-    <div style={{ maxWidth: '600px' }}>
-      <h2 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 500 }}>
-        Send message
-      </h2>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Send Message</Text>
 
-      {/* Form */}
-      <div style={{
-        padding: '16px',
-        backgroundColor: '#fff',
-        border: '0.5px solid #e0e0e0',
-        borderRadius: '12px',
-        marginBottom: '32px'
-      }}>
-        {/* Recipient */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
-            To
-          </label>
-          <select
-            value={recipientId}
-            onChange={(e) => setRecipientId(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              border: '0.5px solid #e0e0e0',
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 400,
-              boxSizing: 'border-box'
-            }}
+      <View style={styles.card}>
+        <Text style={styles.label}>To</Text>
+
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={recipientId}
+            onValueChange={setRecipientId}
           >
             {state.data.people.map(person => (
-              <option key={person.id} value={person.id}>
-                {person.name} — {person.department}
-              </option>
+              <Picker.Item
+                key={person.id}
+                label={`${person.name} - ${person.department}`}
+                value={person.id}
+              />
             ))}
-          </select>
-        </div>
+          </Picker>
+        </View>
 
-        {/* Message */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>
-            Message
-          </label>
-          <textarea
-            value={messageBody}
-            onChange={(e) => setMessageBody(e.target.value)}
-            placeholder="Your message..."
-            style={{
-              width: '100%',
-              minHeight: '100px',
-              padding: '10px 12px',
-              border: '0.5px solid #e0e0e0',
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 400,
-              boxSizing: 'border-box',
-              fontFamily: 'inherit',
-              resize: 'vertical'
-            }}
-          />
-        </div>
+        <Text style={[styles.label, { marginTop: 20 }]}>
+          Message
+        </Text>
 
-        {/* Send */}
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button
-            onClick={handleSend}
+        <TextInput
+          style={styles.input}
+          multiline
+          numberOfLines={5}
+          value={messageBody}
+          placeholder="Your message..."
+          onChangeText={setMessageBody}
+          textAlignVertical="top"
+        />
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              {
+                backgroundColor:
+                  messageBody.trim().length < 5 ? '#ccc' : '#000',
+              },
+            ]}
             disabled={messageBody.trim().length < 5}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: messageBody.trim().length < 5 ? '#ccc' : '#000',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 400,
-              cursor: messageBody.trim().length < 5 ? 'not-allowed' : 'pointer'
-            }}
+            onPress={handleSend}
           >
-            Send
-          </button>
-          {sent && (
-            <span style={{ fontSize: '13px', color: '#28a745', fontWeight: 400 }}>
-              Message sent
-            </span>
-          )}
-        </div>
-      </div>
+            <Text style={styles.buttonText}>Send</Text>
+          </TouchableOpacity>
 
-      {/* Sent Messages */}
+          {sent && (
+            <Text style={styles.success}>
+              ✓ Message Sent
+            </Text>
+          )}
+        </View>
+      </View>
+
       {ceoMessages.length > 0 && (
         <>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 500 }}>
-            Sent messages
-          </h3>
+          <Text style={styles.subtitle}>Sent Messages</Text>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {ceoMessages.map(message => (
-              <div
-                key={message.id}
-                style={{
-                  padding: '16px',
-                  backgroundColor: '#fff',
-                  border: '0.5px solid #e0e0e0',
-                  borderRadius: '12px'
-                }}
-              >
-                <div style={{ fontSize: '12px', fontWeight: 500, color: '#007bff', marginBottom: '8px' }}>
-                  To: {getPersonName(message.toPersonId)} — {getPersonDept(message.toPersonId)}
-                </div>
-                <div style={{ fontSize: '13px', color: '#333', marginBottom: '8px', lineHeight: '1.5' }}>
-                  {message.body}
-                </div>
-                <div style={{ fontSize: '12px', color: '#999' }}>
-                  {formatDate(message.date)}
-                </div>
-              </div>
-            ))}
-          </div>
+          {ceoMessages.map(message => (
+            <View key={message.id} style={styles.messageCard}>
+              <Text style={styles.recipient}>
+                To: {getPersonName(message.toPersonId)} -{' '}
+                {getPersonDept(message.toPersonId)}
+              </Text>
+
+              <Text style={styles.body}>
+                {message.body}
+              </Text>
+
+              <Text style={styles.date}>
+                {formatDate(message.date)}
+              </Text>
+            </View>
+          ))}
         </>
       )}
-    </div>
+    </ScrollView>
   );
 }
 
-export default Message;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 20,
+  },
+
+  subtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+    marginTop: 25,
+  },
+
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 16,
+  },
+
+  label: {
+    fontWeight: '600',
+    fontSize: 15,
+    marginBottom: 8,
+  },
+
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 120,
+    fontSize: 15,
+    marginTop: 8,
+  },
+
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+
+  button: {
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+
+  success: {
+    marginLeft: 15,
+    color: '#28a745',
+    fontWeight: '600',
+  },
+
+  messageCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 16,
+    marginBottom: 12,
+  },
+
+  recipient: {
+    color: '#007AFF',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+
+  body: {
+    fontSize: 15,
+    color: '#333',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+
+  date: {
+    color: '#888',
+    fontSize: 12,
+  },
+});

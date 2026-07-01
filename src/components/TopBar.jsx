@@ -1,86 +1,149 @@
-import React from 'react';
+import React from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+} from "react-native";
 
-function TopBar({ activeRole, onRoleChange, currentUser, onLogout }) {
+export default function TopBar({
+  activeRole,
+  onRoleChange,
+  currentUser,
+  onLogout,
+}) {
   const roles = [
-    { value: 'individual', label: 'Individual' },
-    { value: 'hr', label: 'HR' },
-    { value: 'ceo', label: 'CEO' }
+    { value: "individual", label: "Individual" },
+    { value: "hr", label: "HR" },
+    { value: "ceo", label: "CEO" },
   ];
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '16px 24px',
-      borderBottom: '0.5px solid #e0e0e0',
-      backgroundColor: '#fff'
-    }}>
+    <View style={styles.container}>
       {/* Logo */}
-      <div>
-        <h1 style={{
-          margin: 0,
-          fontSize: '18px',
-          fontWeight: 500,
-          color: '#000'
-        }}>
-          CownIt
-        </h1>
-      </div>
+      <Text style={styles.logo}>CownIt</Text>
 
       {/* Role Switcher */}
-      <div style={{ display: 'flex', gap: '8px' }}>
-        {roles.map(role => {
+      <View style={styles.roleContainer}>
+        {roles.map((role) => {
           const isActive = activeRole === role.value;
+
           return (
-            <button
+            <Pressable
               key={role.value}
-              onClick={() => onRoleChange(role.value)}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: isActive ? '#000' : '#f5f5f5',
-                color: isActive ? '#fff' : '#000',
-                border: '0.5px solid #e0e0e0',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 400,
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
+              onPress={() => onRoleChange(role.value)}
+              style={[
+                styles.roleButton,
+                isActive && styles.activeRoleButton,
+              ]}
             >
-              {role.label}
-            </button>
+              <Text
+                style={[
+                  styles.roleText,
+                  isActive && styles.activeRoleText,
+                ]}
+              >
+                {role.label}
+              </Text>
+            </Pressable>
           );
         })}
-      </div>
+      </View>
 
-      {/* User Info & Logout */}
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+      {/* User Info */}
+      <View style={styles.userContainer}>
         {currentUser && (
-          <div style={{ fontSize: '13px', fontWeight: 400, color: '#666' }}>
+          <Text style={styles.userName}>
             {currentUser.name}
-          </div>
+          </Text>
         )}
+
         {onLogout && (
-          <button
-            onClick={onLogout}
-            style={{
-              padding: '8px 14px',
-              backgroundColor: 'transparent',
-              color: '#dc3545',
-              border: '0.5px solid #dc3545',
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: 400,
-              cursor: 'pointer'
-            }}
+          <Pressable
+            style={styles.logoutButton}
+            onPress={onLogout}
           >
-            Logout
-          </button>
+            <Text style={styles.logoutText}>
+              Logout
+            </Text>
+          </Pressable>
         )}
-      </div>
-    </div>
+      </View>
+    </View>
   );
 }
 
-export default TopBar;
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+
+  logo: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+
+  roleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  roleButton: {
+    flex: 1,
+    marginHorizontal: 4,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#f5f5f5",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+
+  activeRoleButton: {
+    backgroundColor: "#000",
+  },
+
+  roleText: {
+    color: "#000",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+
+  activeRoleText: {
+    color: "#fff",
+  },
+
+  userContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  userName: {
+    fontSize: 14,
+    color: "#666",
+    flex: 1,
+  },
+
+  logoutButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#dc3545",
+  },
+
+  logoutText: {
+    color: "#dc3545",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+});

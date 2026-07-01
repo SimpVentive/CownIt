@@ -1,144 +1,190 @@
-import React, { useState } from 'react';
-import { people, commits, achievements, monthlyUpdates, messages, hrComments } from './data/seed';
-import TopBar from './components/TopBar';
-import Sidebar from './components/Sidebar';
-import ContentArea from './components/ContentArea';
-import Login from './pages/Login';
+import React, { useState } from "react";
+import {
+  View,
+  StyleSheet,
+  useWindowDimensions,
+} from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-function App() {
+import {
+  people,
+  commits,
+  achievements,
+  monthlyUpdates,
+  messages,
+  hrComments,
+} from "./data/seed";
+
+import TopBar from "./components/TopBar";
+import Sidebar from "./components/Sidebar";
+import MobileNav from "./components/MobileNav";
+import ContentArea from "./components/ContentArea";
+import Login from "./pages/Login";
+
+export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUserRole, setCurrentUserRole] = useState(null);
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const { width } = useWindowDimensions();
 
+  const isTablet = width >= 768;
   const [state, setState] = useState({
     activeRole: null,
     activePage: null,
     selectedPersonId: null,
     currentUserId: null,
+
     data: {
       people,
       commits,
       achievements,
       monthlyUpdates,
       messages,
-      hrComments
-    }
+      hrComments,
+    },
   });
 
-  const handleLoginSuccess = (role, userId, userName) => {
+  const handleLoginSuccess = (role, userId) => {
     const pageMap = {
-      individual: 'my-commits',
-      hr: 'people',
-      ceo: 'dashboard'
+      individual: "my-commits",
+      hr: "people",
+      ceo: "dashboard",
     };
 
     setIsAuthenticated(true);
-    setCurrentUserRole(role);
-    setCurrentUserId(userId);
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       activeRole: role,
       activePage: pageMap[role],
-      currentUserId: userId
+      currentUserId: userId,
     }));
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    setCurrentUserRole(null);
-    setCurrentUserId(null);
+
     setState({
       activeRole: null,
       activePage: null,
       selectedPersonId: null,
       currentUserId: null,
+
       data: {
         people,
         commits,
         achievements,
         monthlyUpdates,
         messages,
-        hrComments
-      }
+        hrComments,
+      },
     });
   };
 
-  const handleRoleChange = (newRole) => {
+  const handleRoleChange = (role) => {
     const pageMap = {
-      individual: 'my-commits',
-      hr: 'people',
-      ceo: 'dashboard'
+      individual: "my-commits",
+      hr: "people",
+      ceo: "dashboard",
     };
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      activeRole: newRole,
-      activePage: pageMap[newRole],
-      selectedPersonId: null
+      activeRole: role,
+      activePage: pageMap[role],
+      selectedPersonId: null,
     }));
   };
 
-  const handlePageChange = (newPage) => {
-    setState(prev => ({
+  const handlePageChange = (page) => {
+    setState((prev) => ({
       ...prev,
-      activePage: newPage
+      activePage: page,
     }));
   };
 
   const handleSelectPerson = (personId) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      selectedPersonId: personId
+      selectedPersonId: personId,
     }));
   };
 
   const handleDataChange = (entity, newArray) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       data: {
         ...prev.data,
-        [entity]: newArray
-      }
+        [entity]: newArray,
+      },
     }));
   };
 
   if (!isAuthenticated) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <Login
+        onLoginSuccess={handleLoginSuccess}
+      />
+    );
   }
 
-  const currentUser = state.data.people.find(p => p.id === state.currentUserId);
+  const currentUser = state.data.people.find(
+    (p) => p.id === state.currentUserId
+  );
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      backgroundColor: '#fff'
-    }}>
-      <TopBar
-        activeRole={state.activeRole}
-        onRoleChange={handleRoleChange}
-        currentUser={currentUser}
-        onLogout={handleLogout}
-      />
-
-      <div style={{ display: 'flex', flex: 1 }}>
-        <Sidebar
+    <SafeAreaProvider>
+      <View style={styles.container}>
+        <TopBar
           activeRole={state.activeRole}
-          activePage={state.activePage}
-          onPageChange={handlePageChange}
+          onRoleChange={handleRoleChange}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
 
-        <ContentArea
-          state={state}
-          onNavigate={handlePageChange}
-          onSelectPerson={handleSelectPerson}
-          onDataChange={handleDataChange}
-        />
-      </div>
-    </div>
+        <View style={styles.body}>
+          {isTablet && (
+            <Sidebar
+              activeRole={state.activeRole}
+              activePage={state.activePage}
+              onPageChange={handlePageChange}
+            />
+          )}
+
+          <View style={styles.content}>
+            <ContentArea
+              state={state}
+              onNavigate={handlePageChange}
+              onSelectPerson={handleSelectPerson}
+              onDataChange={handleDataChange}
+            />
+          </View>
+        </View>
+
+        {!isTablet && (
+          <MobileNav
+            activeRole={state.activeRole}
+            activePage={state.activePage}
+            onPageChange={handlePageChange}
+          />
+        )}
+      </View>
+    </SafeAreaProvider>
   );
 }
 
-export default App;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+
+  body: {
+    flex: 1,
+    flexDirection: "row",
+  },
+
+  content: {
+    flex: 1,
+    backgroundColor: "#fff",
+    paddingBottom: 70, // Space for MobileNav
+  },
+});

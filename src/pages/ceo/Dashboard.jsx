@@ -1,12 +1,18 @@
-import React from 'react';
+import React from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
 
 const CPQSDP_INFO = {
-  C: { label: 'Cost', color: '#534AB7' },
-  P: { label: 'Productivity', color: '#0F6E56' },
-  Q: { label: 'Quality', color: '#3B6D11' },
-  S: { label: 'Safety', color: '#993C1D' },
-  D: { label: 'Delivery', color: '#185FA5' },
-  O: { label: 'People', color: '#854F0B' }
+  C: { label: "Cost", color: "#534AB7" },
+  P: { label: "Productivity", color: "#0F6E56" },
+  Q: { label: "Quality", color: "#3B6D11" },
+  S: { label: "Safety", color: "#993C1D" },
+  D: { label: "Delivery", color: "#185FA5" },
+  O: { label: "People", color: "#854F0B" },
 };
 
 function Dashboard({ state }) {
@@ -15,184 +21,298 @@ function Dashboard({ state }) {
 
   const totalPeople = state.data.people.length;
   const totalAchievements = state.data.achievements.length;
-  const avgImpact = totalAchievements > 0
-    ? (state.data.achievements.reduce((sum, a) => sum + a.impactRating, 0) / totalAchievements).toFixed(1)
-    : '—';
 
-  const updatedCount = state.data.people.filter(p =>
-    state.data.monthlyUpdates.some(u =>
-      u.personId === p.id && u.month === currentMonth && u.year === currentYear
+  const avgImpact =
+    totalAchievements > 0
+      ? (
+          state.data.achievements.reduce(
+            (sum, a) => sum + a.impactRating,
+            0
+          ) / totalAchievements
+        ).toFixed(1)
+      : "—";
+
+  const updatedCount = state.data.people.filter((p) =>
+    state.data.monthlyUpdates.some(
+      (u) =>
+        u.personId === p.id &&
+        u.month === currentMonth &&
+        u.year === currentYear
     )
   ).length;
 
-  const uniqueDepts = new Set(state.data.people.map(p => p.department)).size;
+  const uniqueDepts = new Set(
+    state.data.people.map((p) => p.department)
+  ).size;
 
-  // CPQSDP Scores
   const cpqsdpScores = {};
-  Object.keys(CPQSDP_INFO).forEach(dim => {
-    const achievementsWithDim = state.data.achievements.filter(a => a.cpqsdp.includes(dim));
-    if (achievementsWithDim.length > 0) {
-      cpqsdpScores[dim] = (
-        achievementsWithDim.reduce((sum, a) => sum + a.impactRating, 0) / achievementsWithDim.length
-      ).toFixed(1);
-    } else {
-      cpqsdpScores[dim] = '—';
-    }
+
+  Object.keys(CPQSDP_INFO).forEach((dim) => {
+    const achievements = state.data.achievements.filter((a) =>
+      a.cpqsdp.includes(dim)
+    );
+
+    cpqsdpScores[dim] =
+      achievements.length > 0
+        ? (
+            achievements.reduce(
+              (sum, a) => sum + a.impactRating,
+              0
+            ) / achievements.length
+          ).toFixed(1)
+        : "—";
   });
 
-  const formatDate = (isoString) => {
-    return new Date(isoString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: '2-digit',
-      year: 'numeric'
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
     });
-  };
 
   const recentAchievements = [...state.data.achievements]
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 5);
 
   return (
-    <div>
-      <h2 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 500 }}>
-        Dashboard
-      </h2>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Dashboard</Text>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-        {[
-          { label: 'People committed', value: totalPeople, sub: `across ${uniqueDepts} department${uniqueDepts !== 1 ? 's' : ''}` },
-          { label: 'Total achievements', value: totalAchievements, sub: 'since programme start' },
-          { label: 'Avg impact score', value: avgImpact, sub: 'self-rated / 10' },
-          { label: 'Updated this month', value: `${updatedCount}/${totalPeople}`, sub: 'individuals' }
-        ].map((stat, idx) => (
-          <div
-            key={idx}
-            style={{
-              padding: '16px',
-              backgroundColor: '#fff',
-              border: '0.5px solid #e0e0e0',
-              borderRadius: '12px'
-            }}
-          >
-            <div style={{ fontSize: '12px', fontWeight: 400, color: '#666', marginBottom: '8px' }}>
-              {stat.label}
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: 500, marginBottom: '4px' }}>
-              {stat.value}
-            </div>
-            <div style={{ fontSize: '11px', color: '#999' }}>
-              {stat.sub}
-            </div>
-          </div>
-        ))}
-      </div>
+      <View style={styles.statsContainer}>
+        <View style={styles.card}>
+          <Text style={styles.label}>People committed</Text>
+          <Text style={styles.value}>{totalPeople}</Text>
+          <Text style={styles.sub}>
+            Across {uniqueDepts} department
+            {uniqueDepts !== 1 ? "s" : ""}
+          </Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.label}>Achievements</Text>
+          <Text style={styles.value}>{totalAchievements}</Text>
+          <Text style={styles.sub}>Programme total</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.label}>Avg Impact</Text>
+          <Text style={styles.value}>{avgImpact}</Text>
+          <Text style={styles.sub}>Self-rated /10</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.label}>Updated</Text>
+          <Text style={styles.value}>
+            {updatedCount}/{totalPeople}
+          </Text>
+          <Text style={styles.sub}>This month</Text>
+        </View>
+      </View>
 
       {/* CPQSDP */}
-      <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 500 }}>
-        CPQSDP impact scores
-      </h3>
+      <Text style={styles.section}>CPQSDP Impact Scores</Text>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px', marginBottom: '32px' }}>
-        {Object.entries(CPQSDP_INFO).map(([key, info]) => {
-          const score = cpqsdpScores[key];
-          const isScore = score !== '—';
+      <View style={styles.cpqsdpContainer}>
+        {Object.entries(CPQSDP_INFO).map(([key, info]) => (
+          <View key={key} style={styles.cpqsdpCard}>
+            <Text style={styles.label}>{info.label}</Text>
+
+            <Text
+              style={[
+                styles.score,
+                {
+                  color: info.color,
+                },
+              ]}
+            >
+              {cpqsdpScores[key]}
+            </Text>
+
+            {cpqsdpScores[key] !== "—" && (
+              <View style={styles.progress}>
+                <View
+                  style={{
+                    height: 4,
+                    borderRadius: 2,
+                    width: `${
+                      (parseFloat(cpqsdpScores[key]) / 10) * 100
+                    }%`,
+                    backgroundColor: info.color,
+                  }}
+                />
+              </View>
+            )}
+          </View>
+        ))}
+      </View>
+
+      {/* Recent */}
+      <Text style={styles.section}>Recent Achievements</Text>
+
+      {recentAchievements.length === 0 ? (
+        <View style={styles.empty}>
+          <Text>No achievements yet</Text>
+        </View>
+      ) : (
+        recentAchievements.map((achievement) => {
+          const person = state.data.people.find(
+            (p) => p.id === achievement.personId
+          );
 
           return (
-            <div
-              key={key}
-              style={{
-                padding: '16px',
-                backgroundColor: '#fff',
-                border: '0.5px solid #e0e0e0',
-                borderRadius: '12px'
-              }}
+            <View
+              key={achievement.id}
+              style={styles.achievementCard}
             >
-              <div style={{ fontSize: '12px', fontWeight: 400, color: '#666', marginBottom: '8px' }}>
-                {info.label}
-              </div>
-              <div style={{ fontSize: '20px', fontWeight: 500, color: info.color, marginBottom: '8px' }}>
-                {score}
-              </div>
-              {isScore && (
-                <div style={{
-                  width: '100%',
-                  height: '3px',
-                  backgroundColor: '#e0e0e0',
-                  borderRadius: '2px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${(parseFloat(score) / 10) * 100}%`,
-                    backgroundColor: info.color
-                  }} />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Recent Achievements */}
-      <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 500 }}>
-        Recent achievements
-      </h3>
-
-      {recentAchievements.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {recentAchievements.map(achievement => {
-            const person = state.data.people.find(p => p.id === achievement.personId);
-
-            return (
-              <div
-                key={achievement.id}
+              <View
                 style={{
-                  padding: '16px',
-                  backgroundColor: '#fff',
-                  border: '0.5px solid #e0e0e0',
-                  borderRadius: '12px'
+                  flexDirection: "row",
+                  justifyContent: "space-between",
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px' }}>
-                      {achievement.title}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
-                      By {person?.name} · {formatDate(achievement.date)}
-                    </div>
-                  </div>
-                  <div style={{
-                    padding: '4px 10px',
-                    backgroundColor: '#f9f9f9',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: 500
-                  }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.achievementTitle}>
+                    {achievement.title}
+                  </Text>
+
+                  <Text style={styles.info}>
+                    By {person?.name} •{" "}
+                    {formatDate(achievement.date)}
+                  </Text>
+                </View>
+
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
                     {achievement.impactRating}/10
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div style={{
-          padding: '32px',
-          textAlign: 'center',
-          backgroundColor: '#fff',
-          border: '0.5px solid #e0e0e0',
-          borderRadius: '12px',
-          color: '#999',
-          fontSize: '13px',
-          fontWeight: 400
-        }}>
-          No achievements yet
-        </div>
+                  </Text>
+                </View>
+              </View>
+            </View>
+          );
+        })
       )}
-    </div>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#F5F5F5",
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 20,
+  },
+
+  statsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+
+  card: {
+    width: "48%",
+    backgroundColor: "#FFF",
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 12,
+    elevation: 2,
+  },
+
+  label: {
+    color: "#666",
+    fontSize: 12,
+  },
+
+  value: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginVertical: 5,
+  },
+
+  sub: {
+    fontSize: 11,
+    color: "#999",
+  },
+
+  section: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 15,
+    marginTop: 10,
+  },
+
+  cpqsdpContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+
+  cpqsdpCard: {
+    width: "31%",
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    elevation: 2,
+  },
+
+  score: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginVertical: 8,
+  },
+
+  progress: {
+    backgroundColor: "#DDD",
+    height: 4,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+
+  achievementCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 12,
+    elevation: 2,
+  },
+
+  achievementTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  info: {
+    color: "#666",
+    marginTop: 5,
+  },
+
+  badge: {
+    backgroundColor: "#EEE",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+
+  badgeText: {
+    fontWeight: "700",
+  },
+
+  empty: {
+    backgroundColor: "#FFF",
+    padding: 25,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+});
 
 export default Dashboard;

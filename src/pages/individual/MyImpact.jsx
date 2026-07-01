@@ -1,4 +1,9 @@
-import React from 'react';
+import {
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+} from 'react-native';
 
 const CPQSDP_COLORS = {
   C: '#534AB7',
@@ -44,144 +49,272 @@ function MyImpact({ state }) {
   };
 
   return (
-    <div>
-      <h2 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 500 }}>
-        My impact
-      </h2>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 20 }}
+    >
+      <Text style={styles.title}>My Impact</Text>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+      <View style={styles.statsContainer}>
         {[
-          { label: 'Achievements logged', value: userAchievements.length },
-          { label: 'Avg impact rating', value: avgRating },
-          { label: 'Dimensions covered', value: dimsCovered }
+          {
+            label: 'Achievements logged',
+            value: userAchievements.length,
+          },
+          {
+            label: 'Avg impact rating',
+            value: avgRating,
+          },
+          {
+            label: 'Dimensions covered',
+            value: dimsCovered,
+          },
         ].map((stat, idx) => (
-          <div
-            key={idx}
-            style={{
-              padding: '16px',
-              backgroundColor: '#fff',
-              border: '0.5px solid #e0e0e0',
-              borderRadius: '12px'
-            }}
-          >
-            <div style={{ fontSize: '12px', fontWeight: 400, color: '#666', marginBottom: '8px' }}>
-              {stat.label}
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: 500 }}>
-              {stat.value}
-            </div>
-          </div>
+          <View key={idx} style={styles.statCard}>
+            <Text style={styles.statLabel}>{stat.label}</Text>
+            <Text style={styles.statValue}>{stat.value}</Text>
+          </View>
         ))}
-      </div>
+      </View>
 
-      {/* Achievements */}
-      <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 500 }}>
-        Achievements
-      </h3>
+      <Text style={styles.sectionTitle}>Achievements</Text>
 
       {userAchievements.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {userAchievements.map(achievement => {
-            const level = getCommitLevel(achievement.commitId);
-            const hrComments = state.data.hrComments.filter(c => c.achievementId === achievement.id);
+        userAchievements.map((achievement) => {
+          const hrComments = state.data.hrComments.filter(
+            (c) => c.achievementId === achievement.id
+          );
 
-            return (
-              <div
-                key={achievement.id}
-                style={{
-                  padding: '16px',
-                  backgroundColor: '#fff',
-                  border: '0.5px solid #e0e0e0',
-                  borderRadius: '12px'
-                }}
-              >
-                {/* Title */}
-                <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px' }}>
-                  {achievement.title}
-                </div>
+          return (
+            <View key={achievement.id} style={styles.card}>
+              <Text style={styles.cardTitle}>
+                {achievement.title}
+              </Text>
 
-                {/* Meta */}
-                <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  <span>{formatDate(achievement.date)}</span>
-                  <span>•</span>
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                    {achievement.cpqsdp.map(dim => (
-                      <div
-                        key={dim}
-                        style={{
-                          width: '6px',
-                          height: '6px',
-                          borderRadius: '50%',
-                          backgroundColor: CPQSDP_COLORS[dim]
-                        }}
-                      />
-                    ))}
-                    <span>{achievement.cpqsdp.join(', ')}</span>
-                  </div>
-                  <span>•</span>
-                  <span>Impact: {achievement.impactRating}/10</span>
-                </div>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaText}>
+                  {formatDate(achievement.date)}
+                </Text>
 
-                {/* Evidence */}
-                <div style={{ fontSize: '12px', color: '#666', lineHeight: '1.5', marginBottom: '12px' }}>
-                  {achievement.evidence}
-                </div>
+                <Text style={styles.metaText}>
+                  Impact: {achievement.impactRating}/10
+                </Text>
+              </View>
 
-                {/* File */}
-                {achievement.fileAttachment && (
-                  <div style={{ fontSize: '12px', color: '#999', marginBottom: '12px' }}>
-                    Attachment: {achievement.fileAttachment}
-                  </div>
-                )}
+              <View style={styles.dimensionRow}>
+                {achievement.cpqsdp.map((dim) => (
+                  <View
+                    key={dim}
+                    style={[
+                      styles.dimensionBadge,
+                      {
+                        backgroundColor: CPQSDP_COLORS[dim],
+                      },
+                    ]}
+                  >
+                    <Text style={styles.dimensionText}>
+                      {dim}
+                    </Text>
+                  </View>
+                ))}
+              </View>
 
-                {/* HR Comments */}
-                {hrComments.length > 0 && (
-                  <div style={{ borderTop: '0.5px solid #e0e0e0', paddingTop: '12px' }}>
-                    {hrComments.map(comment => (
-                      <div
-                        key={comment.id}
-                        style={{
-                          padding: '12px',
-                          backgroundColor: '#f9f9f9',
-                          borderRadius: '8px',
-                          marginBottom: '8px',
-                          borderLeft: `2px solid #007bff`
-                        }}
-                      >
-                        <div style={{ fontSize: '12px', fontWeight: 500, color: '#007bff', marginBottom: '4px' }}>
-                          HR comment
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
-                          {comment.body}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#999' }}>
-                          {comment.authorName} · {formatDate(comment.date)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+              <Text style={styles.evidence}>
+                {achievement.evidence}
+              </Text>
+
+              {achievement.fileAttachment && (
+                <Text style={styles.attachment}>
+                  📎 {achievement.fileAttachment}
+                </Text>
+              )}
+
+              {hrComments.length > 0 && (
+                <View style={styles.commentSection}>
+                  {hrComments.map((comment) => (
+                    <View
+                      key={comment.id}
+                      style={styles.commentCard}
+                    >
+                      <Text style={styles.commentTitle}>
+                        HR Comment
+                      </Text>
+
+                      <Text style={styles.commentBody}>
+                        {comment.body}
+                      </Text>
+
+                      <Text style={styles.commentMeta}>
+                        {comment.authorName} ·{' '}
+                        {formatDate(comment.date)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })
       ) : (
-        <div style={{
-          padding: '32px',
-          textAlign: 'center',
-          backgroundColor: '#fff',
-          border: '0.5px solid #e0e0e0',
-          borderRadius: '12px',
-          color: '#999',
-          fontSize: '13px',
-          fontWeight: 400
-        }}>
-          No achievements logged yet
-        </div>
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>
+            No achievements logged yet
+          </Text>
+        </View>
       )}
-    </div>
-  );
-}
+    </ScrollView>
 
+    
+  );
+  
+}
+const styles = StyleSheet.create({
+      container: {
+        flex: 1,
+        padding: 16,
+        backgroundColor: '#fff',
+      },
+
+      title: {
+        fontSize: 22,
+        fontWeight: '600',
+        marginBottom: 20,
+      },
+
+      statsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 25,
+      },
+
+      statCard: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        borderRadius: 12,
+        padding: 15,
+        marginHorizontal: 4,
+      },
+
+      statLabel: {
+        color: '#666',
+        fontSize: 12,
+      },
+
+      statValue: {
+        marginTop: 8,
+        fontSize: 24,
+        fontWeight: '700',
+      },
+
+      sectionTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 15,
+      },
+
+      card: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        padding: 16,
+        marginBottom: 15,
+      },
+
+      cardTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 10,
+      },
+
+      metaRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+      },
+
+      metaText: {
+        color: '#666',
+        fontSize: 12,
+      },
+
+      dimensionRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: 12,
+      },
+
+      dimensionBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        marginRight: 6,
+        marginBottom: 6,
+      },
+
+      dimensionText: {
+        color: '#fff',
+        fontWeight: '600',
+        fontSize: 11,
+      },
+
+      evidence: {
+        color: '#555',
+        lineHeight: 20,
+        marginBottom: 10,
+      },
+
+      attachment: {
+        color: '#777',
+        marginBottom: 10,
+      },
+
+      commentSection: {
+        marginTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+        paddingTop: 10,
+      },
+
+      commentCard: {
+        backgroundColor: '#F5F9FF',
+        borderLeftWidth: 4,
+        borderLeftColor: '#007AFF',
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 8,
+      },
+
+      commentTitle: {
+        color: '#007AFF',
+        fontWeight: '700',
+        marginBottom: 5,
+      },
+
+      commentBody: {
+        color: '#444',
+      },
+
+      commentMeta: {
+        marginTop: 5,
+        color: '#888',
+        fontSize: 11,
+      },
+
+      emptyCard: {
+        padding: 30,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#ddd',
+      },
+
+      emptyText: {
+        color: '#888',
+      },
+    });
 export default MyImpact;
