@@ -4,14 +4,17 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 interface TopBarProps {
   activeRole: 'individual' | 'hr' | 'ceo'
   onRoleChange: (role: 'individual' | 'hr' | 'ceo') => void
+  userRole?: 'individual' | 'hr' | 'ceo'
+  userName?: string
 }
 
-export default function TopBar({ activeRole, onRoleChange }: TopBarProps) {
-  const roles = [
-    { value: 'individual' as const, label: 'Individual' },
-    { value: 'hr' as const, label: 'HR' },
-    { value: 'ceo' as const, label: 'CEO' }
-  ]
+export default function TopBar({ activeRole, onRoleChange, userRole = 'individual', userName = 'User' }: TopBarProps) {
+  const allowedRoles = userRole ? [userRole] : ['individual', 'hr', 'ceo']
+  const roleLabels: Record<'individual' | 'hr' | 'ceo', string> = {
+    individual: 'Individual',
+    hr: 'HR',
+    ceo: 'CEO'
+  }
 
   return (
     <View style={styles.container}>
@@ -24,22 +27,22 @@ export default function TopBar({ activeRole, onRoleChange }: TopBarProps) {
       </View>
 
       <View style={styles.right}>
-        {roles.map(role => (
-          <TouchableOpacity
-            key={role.value}
-            onPress={() => onRoleChange(role.value)}
+        <Text style={styles.userName}>{userName}</Text>
+        {allowedRoles.map(role => (
+          <View
+            key={role}
             style={[
               styles.button,
-              activeRole === role.value ? styles.buttonActive : styles.buttonInactive
+              styles.buttonActive
             ]}
           >
             <Text style={[
               styles.buttonLabel,
-              activeRole === role.value ? styles.buttonLabelActive : styles.buttonLabelInactive
+              styles.buttonLabelActive
             ]}>
-              {role.label}
+              {roleLabels[role]}
             </Text>
-          </TouchableOpacity>
+          </View>
         ))}
       </View>
     </View>
@@ -77,7 +80,13 @@ const styles = StyleSheet.create({
   },
   right: {
     flexDirection: 'row',
-    gap: 6
+    gap: 12,
+    alignItems: 'center'
+  },
+  userName: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '400'
   },
   button: {
     paddingHorizontal: 12,

@@ -3,6 +3,7 @@ type Person = {
   name: string
   initials: string
   department: string
+  role: 'individual' | 'hr' | 'ceo'
   avatarColor: string
   avatarTextColor: string
 }
@@ -66,9 +67,10 @@ type AppData = {
 const people: Person[] = [
   {
     id: 'p1',
-    name: 'Arjun Mehta',
-    initials: 'AM',
+    name: 'John Smith',
+    initials: 'JS',
     department: 'Operations',
+    role: 'individual',
     avatarColor: '#EEEDFE',
     avatarTextColor: '#3C3489'
   },
@@ -77,6 +79,7 @@ const people: Person[] = [
     name: 'Priya Sharma',
     initials: 'PS',
     department: 'Quality',
+    role: 'individual',
     avatarColor: '#E1F5EE',
     avatarTextColor: '#085041'
   },
@@ -85,6 +88,7 @@ const people: Person[] = [
     name: 'Rohan Das',
     initials: 'RD',
     department: 'Safety',
+    role: 'individual',
     avatarColor: '#FAEEDA',
     avatarTextColor: '#633806'
   },
@@ -93,8 +97,18 @@ const people: Person[] = [
     name: 'Meena Iyer',
     initials: 'MI',
     department: 'HR',
+    role: 'hr',
     avatarColor: '#FAECE7',
     avatarTextColor: '#993C1D'
+  },
+  {
+    id: 'p5',
+    name: 'Rajiv Kumar',
+    initials: 'RK',
+    department: 'Executive',
+    role: 'ceo',
+    avatarColor: '#F3E5F5',
+    avatarTextColor: '#4A148C'
   }
 ]
 

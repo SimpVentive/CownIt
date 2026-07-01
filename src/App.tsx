@@ -186,9 +186,12 @@ export default function App() {
     )
   }
 
+  const currentUser = state.data.people.find(p => p.id === CURRENT_PERSON_ID)
+  const userRole = currentUser?.role || 'individual'
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <TopBar activeRole={state.activeRole} onRoleChange={handleRoleChange} />
+      <TopBar activeRole={state.activeRole} onRoleChange={handleRoleChange} userRole={userRole} userName={currentUser?.name} />
 
       {state.activeRole === 'individual' ? (
         <View style={{ flex: 1, flexDirection: 'column' }}>
