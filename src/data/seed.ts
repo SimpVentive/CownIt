@@ -23,7 +23,7 @@ type Achievement = {
   title: string
   evidence: string
   cpqsdp: Array<'C' | 'P' | 'Q' | 'S' | 'D' | 'O'>
-  impactRating: number
+  impactRatings: Record<'C' | 'P' | 'Q' | 'S' | 'D' | 'O', number>
   date: string
   fileAttachment: string | null
 }
@@ -207,7 +207,7 @@ const achievements: Achievement[] = [
     title: 'Operational Runbook Optimization',
     evidence: 'Comprehensive runbook developed and approved by operations leadership, now used as reference standard for all divisions',
     cpqsdp: ['P', 'Q'],
-    impactRating: 7,
+    impactRatings: { 'C': 0, 'P': 7, 'Q': 7, 'S': 0, 'D': 0, 'O': 0 },
     date: '2026-06-15T08:30:00Z',
     fileAttachment: null
   },
@@ -218,7 +218,7 @@ const achievements: Achievement[] = [
     title: 'Supply Chain Coordination Success',
     evidence: 'Successfully resolved critical supply chain issue through effective cross-functional coordination, saving 2 weeks of delay',
     cpqsdp: ['Q', 'D'],
-    impactRating: 8,
+    impactRatings: { 'C': 0, 'P': 0, 'Q': 8, 'S': 0, 'D': 8, 'O': 0 },
     date: '2026-06-22T11:15:00Z',
     fileAttachment: null
   },
@@ -229,7 +229,7 @@ const achievements: Achievement[] = [
     title: 'Enterprise Excellence Framework',
     evidence: 'Operational excellence framework adopted across all divisions with measurable improvements in efficiency and customer satisfaction metrics',
     cpqsdp: ['C', 'Q', 'S'],
-    impactRating: 9,
+    impactRatings: { 'C': 9, 'P': 0, 'Q': 9, 'S': 9, 'D': 0, 'O': 0 },
     date: '2026-06-28T09:45:00Z',
     fileAttachment: null
   }

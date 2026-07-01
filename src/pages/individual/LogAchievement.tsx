@@ -3,6 +3,7 @@ import { ScrollView, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingVi
 import type { AppData, Achievement } from '../../data/seed'
 import { CPQSDP_COLORS, CPQSDP_LABELS, LEVEL_COLORS } from '../../utils/constants'
 import * as api from '../../services/api'
+import ImpactSlider from '../../components/ImpactSlider'
 
 interface LogAchievementProps {
   data: AppData
@@ -22,15 +23,23 @@ export default function LogAchievement({
   const [selectedCommitId, setSelectedCommitId] = useState<string | null>(null)
   const [evidence, setEvidence] = useState('')
   const [selectedCPQSDP, setSelectedCPQSDP] = useState<string[]>([])
-  const [impactRating, setImpactRating] = useState<number | null>(null)
+  const [impactRatings, setImpactRatings] = useState<Record<string, number>>({})
   const [fileAttachment, setFileAttachment] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
 
   const toggleCPQSDP = (key: string) => {
-    setSelectedCPQSDP(prev =>
-      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-    )
+    setSelectedCPQSDP(prev => {
+      const newSelected = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+      if (!prev.includes(key)) {
+        setImpactRatings(r => ({ ...r, [key]: 0 }))
+      }
+      return newSelected
+    })
+  }
+
+  const updateImpactRating = (key: string, value: number) => {
+    setImpactRatings(prev => ({ ...prev, [key]: value }))
   }
 
   const validateAndSave = async () => {
@@ -51,8 +60,9 @@ export default function LogAchievement({
     if (selectedCPQSDP.length === 0) {
       newErrors.selectedCPQSDP = 'Tag at least one dimension'
     }
-    if (!impactRating) {
-      newErrors.impactRating = 'Select an impact rating'
+    const allRatingsSet = selectedCPQSDP.every(key => impactRatings[key] !== undefined && impactRatings[key] > 0)
+    if (!allRatingsSet) {
+      newErrors.impactRatings = 'Set impact rating for each dimension'
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -62,6 +72,15 @@ export default function LogAchievement({
 
     setIsSaving(true)
     try {
+      const allRatings: Record<'C' | 'P' | 'Q' | 'S' | 'D' | 'O', number> = {
+        'C': impactRatings['C'] || 0,
+        'P': impactRatings['P'] || 0,
+        'Q': impactRatings['Q'] || 0,
+        'S': impactRatings['S'] || 0,
+        'D': impactRatings['D'] || 0,
+        'O': impactRatings['O'] || 0
+      }
+
       const newAchievement: Achievement = {
         id: 'a' + Date.now(),
         personId: currentPersonId,
@@ -69,7 +88,7 @@ export default function LogAchievement({
         title: title.trim(),
         evidence: evidence.trim(),
         cpqsdp: selectedCPQSDP as Array<'C' | 'P' | 'Q' | 'S' | 'D' | 'O'>,
-        impactRating: impactRating!,
+        impactRatings: allRatings,
         date: new Date().toISOString(),
         fileAttachment: fileAttachment
       }
@@ -81,7 +100,7 @@ export default function LogAchievement({
       setSelectedCommitId(null)
       setEvidence('')
       setSelectedCPQSDP([])
-      setImpactRating(null)
+      setImpactRatings({})
       setFileAttachment(null)
       setErrors({})
       onNavigate('my-impact')
@@ -242,38 +261,23 @@ export default function LogAchievement({
           </View>
         </View>
 
-        {/* Impact Rating */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Impact rating — 1 to 10</Text>
-          <View style={styles.ratingContainer}>
-            {Array.from({ length: 10 }, (_, i) => i + 1).map(num => (
-              <TouchableOpacity
-                key={num}
-                onPress={() => setImpactRating(num)}
-                style={[
-                  styles.ratingSquare,
-                  impactRating === num && styles.ratingSquareActive
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.ratingText,
-                    impactRating === num && styles.ratingTextActive
-                  ]}
-                >
-                  {num}
-                </Text>
-              </TouchableOpacity>
+        {/* Impact Sliders for Selected Parameters */}
+        {selectedCPQSDP.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.label}>Impact rating for each dimension</Text>
+            <Text style={styles.description}>Drag slider from left to right — 0 to 10</Text>
+            {selectedCPQSDP.map(key => (
+              <ImpactSlider
+                key={key}
+                label={`${key} — ${CPQSDP_LABELS[key]}`}
+                value={impactRatings[key] || 0}
+                onChange={value => updateImpactRating(key, value)}
+                color={CPQSDP_COLORS[key]}
+              />
             ))}
+            {errors.impactRatings && <Text style={styles.error}>{errors.impactRatings}</Text>}
           </View>
-          <View style={styles.ratingGuide}>
-            <Text style={styles.ratingGuideText}>1–3 Minor</Text>
-            <Text style={styles.ratingGuideText}>4–6 Moderate</Text>
-            <Text style={styles.ratingGuideText}>7–8 Significant</Text>
-            <Text style={styles.ratingGuideText}>9–10 Transformational</Text>
-          </View>
-          {errors.impactRating && <Text style={styles.error}>{errors.impactRating}</Text>}
-        </View>
+        )}
 
         {/* Save Button */}
         <TouchableOpacity
