@@ -176,7 +176,7 @@ export default function HRDrilldown({
                     {achievement.cpqsdp.join(', ')}
                   </Text>
                   <Text style={styles.impactText}>
-                    Impact: {achievement.impactRating}/10
+                    Impact: {achievement.cpqsdp.length > 0 ? (achievement.cpqsdp.reduce((sum, key) => sum + (achievement.impactRatings[key] || 0), 0) / achievement.cpqsdp.length).toFixed(1) : 0}/10
                   </Text>
                 </View>
 
@@ -374,11 +374,8 @@ const styles = StyleSheet.create({
     lineHeight: 18
   },
   commentBox: {
-    borderLeftWidth: 2,
-    borderLeftColor: '#534AB7',
     backgroundColor: '#EEEDFE',
-    borderTopRightRadius: 4,
-    borderBottomRightRadius: 4,
+    borderRadius: 4,
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginTop: 8
