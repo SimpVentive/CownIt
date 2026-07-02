@@ -18,7 +18,7 @@ jobs:
 
       - run: bun install
 
-      - run: bun run build
+      - run: bun expo export --platform web
 
       - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
@@ -40,7 +40,6 @@ jobs:
             bun expo export --platform web
 
             sudo systemctl reload nginx
-          
           source: "dist/*"
           
           target: "/var/www/cownit.l-kurve.com/"
