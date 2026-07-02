@@ -32,4 +32,6 @@ jobs:
             git pull origin main
             bun install
             bun run build
-            sudo systemctl reload nginx
+            sudo systemctl reload nginx		  
+          source: "dist/*"
+          target: "/var/www/cownit.l-kurve.com/"
