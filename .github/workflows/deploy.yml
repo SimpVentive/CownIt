@@ -48,7 +48,5 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          script: |
-            cd /var/www/cownit.l-kurve.com/CownIt
           source: "dist/*"
           target: "/var/www/cownit.l-kurve.com/"
