@@ -40,7 +40,15 @@ jobs:
             bun expo export --platform web
 
             sudo systemctl reload apache2
-            
+      
+      - name: Copy dist to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /var/www/cownit.l-kurve.com/CownIt
           source: "dist/*"
-          
           target: "/var/www/cownit.l-kurve.com/"
