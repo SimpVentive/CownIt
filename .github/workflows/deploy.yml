@@ -39,7 +39,8 @@ jobs:
 
             bun expo export --platform web
 
-            sudo systemctl reload nginx
+            sudo systemctl reload apache2
+            
           source: "dist/*"
           
           target: "/var/www/cownit.l-kurve.com/"
