@@ -37,6 +37,10 @@ jobs:
 
             bun install
 
-            bun run build
+            bun expo export --platform web
 
             sudo systemctl reload nginx
+          
+          source: "dist/*"
+          
+          target: "/var/www/cownit.l-kurve.com/"
