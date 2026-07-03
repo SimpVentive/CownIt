@@ -1,0 +1,23 @@
+import jwt from 'jsonwebtoken'
+
+const JWT_SECRET = process.env.JWT_SECRET || 'cownit-secret-key-dev'
+
+export function verifyToken(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1]
+
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' })
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    req.user = decoded
+    next()
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' })
+  }
+}
+
+export function generateToken(userId, role) {
+  return jwt.sign({ userId, role }, JWT_SECRET, { expiresIn: '30d' })
+}
