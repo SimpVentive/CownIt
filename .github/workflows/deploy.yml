@@ -16,9 +16,16 @@ jobs:
         with:
           bun-version: latest
 
-      - run: bun install
+      # Frontend .env
+      - name: Create Frontend .env
+        run: |
+          echo "EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" > .env
+      
+      - name: Install Frontend Dependencies
+        run: bun install
 
-      - run: bun expo export --platform web
+      - name: Build Frontend
+        run: bun expo export --platform web
 
       - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
@@ -35,8 +42,23 @@ jobs:
 
             git pull origin main
 
-            bun install
+            # ---------- Frontend ----------
+            echo "EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" > .env
 
+            bun install
             bun expo export --platform web
 
+            # ---------- Backend ----------
+            cd server
+
+            echo "BACKENDPORT=${{ secrets.BACKENDPORT }}" > .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+
+            bun install
+            
+            # Restart server
+            pkill -f "bun index.js" || true
+
+            nohup bun index.js > server.log 2>&1 &
+            
             sudo systemctl reload apache2
