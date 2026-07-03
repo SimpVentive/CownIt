@@ -9,6 +9,7 @@ interface TopBarProps {
 }
 
 export default function TopBar({ activeRole, onRoleChange, userRole = 'individual', userName = 'User' }: TopBarProps) {
+  console.log('TopBar userRole:', userRole, 'userName:', userName)
   const allowedRoles = userRole ? [userRole] : ['individual', 'hr', 'ceo']
   const roleLabels: Record<'individual' | 'hr' | 'ceo', string> = {
     individual: 'Individual',
