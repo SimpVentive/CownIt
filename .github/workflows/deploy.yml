@@ -58,7 +58,6 @@ jobs:
             
             # Restart server
             pkill -f "bun index.js" || true
-
             nohup bun index.js > server.log 2>&1 &
             
             sudo systemctl reload apache2
