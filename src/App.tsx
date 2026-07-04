@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { SafeAreaView, View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
 import type { AppData } from './data/seed'
-import { CURRENT_PERSON_ID } from './utils/constants'
 import * as api from './services/api'
 
 import TopBar from './components/TopBar'
@@ -26,6 +25,7 @@ import CEOMessage from './pages/ceo/CEOMessage'
 
 type AppState = {
   isAuthenticated: boolean
+  currentUserId: string | null
   activeRole: 'individual' | 'hr' | 'ceo'
   activePage: string
   selectedPersonId: string | null
@@ -37,6 +37,7 @@ type AppState = {
 
 const initialState: AppState = {
   isAuthenticated: false,
+  currentUserId: null,
   activeRole: 'individual',
   activePage: 'my-commits',
   selectedPersonId: null,
@@ -82,6 +83,7 @@ export default function App() {
       setState(prev => ({
         ...prev,
         isAuthenticated: true,
+        currentUserId: loginUserId,
         data: {
           people,
           commits,
@@ -141,7 +143,7 @@ export default function App() {
 
   // Calculate commitment count for current individual
   const commitmentCount = state.data.commits.filter(
-    c => c.personId === CURRENT_PERSON_ID
+    c => c.personId === state.currentUserId
   ).length
 
   // Show commitment modal if individual has less than 3 commitments
@@ -156,7 +158,7 @@ export default function App() {
       onSelectRecipient: handleSelectRecipient,
       selectedPersonId: state.selectedPersonId,
       selectedRecipientId: state.selectedRecipientId,
-      currentPersonId: CURRENT_PERSON_ID
+      currentPersonId: state.currentUserId || ''
     }
 
     switch (state.activePage) {
@@ -233,7 +235,7 @@ export default function App() {
     )
   }
 
-  const currentUser = state.data.people.find(p => p.id === loginUserId || p.id === CURRENT_PERSON_ID)
+  const currentUser = state.data.people.find(p => p.id === state.currentUserId)
   const userRole = currentUser?.role || 'individual'
 
   return (
