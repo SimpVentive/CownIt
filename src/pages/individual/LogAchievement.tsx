@@ -3,7 +3,6 @@ import { ScrollView, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingVi
 import type { AppData, Achievement } from '../../data/seed'
 import { CPQSDP_COLORS, CPQSDP_LABELS, LEVEL_COLORS } from '../../utils/constants'
 import * as api from '../../services/api'
-import ImpactSlider from '../../components/ImpactSlider'
 
 interface LogAchievementProps {
   data: AppData
@@ -23,23 +22,15 @@ export default function LogAchievement({
   const [selectedCommitId, setSelectedCommitId] = useState<string | null>(null)
   const [evidence, setEvidence] = useState('')
   const [selectedCPQSDP, setSelectedCPQSDP] = useState<string[]>([])
-  const [impactRatings, setImpactRatings] = useState<Record<string, number>>({})
+  const [impactRating, setImpactRating] = useState<number | null>(null)
   const [fileAttachment, setFileAttachment] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
 
   const toggleCPQSDP = (key: string) => {
-    setSelectedCPQSDP(prev => {
-      const newSelected = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-      if (!prev.includes(key)) {
-        setImpactRatings(r => ({ ...r, [key]: 0 }))
-      }
-      return newSelected
-    })
-  }
-
-  const updateImpactRating = (key: string, value: number) => {
-    setImpactRatings(prev => ({ ...prev, [key]: value }))
+    setSelectedCPQSDP(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    )
   }
 
   const validateAndSave = async () => {
@@ -60,9 +51,8 @@ export default function LogAchievement({
     if (selectedCPQSDP.length === 0) {
       newErrors.selectedCPQSDP = 'Tag at least one dimension'
     }
-    const allRatingsSet = selectedCPQSDP.every(key => impactRatings[key] !== undefined && impactRatings[key] > 0)
-    if (!allRatingsSet) {
-      newErrors.impactRatings = 'Set impact rating for each dimension'
+    if (!impactRating) {
+      newErrors.impactRating = 'Select an impact rating'
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -72,15 +62,6 @@ export default function LogAchievement({
 
     setIsSaving(true)
     try {
-      const allRatings: Record<'C' | 'P' | 'Q' | 'S' | 'D' | 'O', number> = {
-        'C': impactRatings['C'] || 0,
-        'P': impactRatings['P'] || 0,
-        'Q': impactRatings['Q'] || 0,
-        'S': impactRatings['S'] || 0,
-        'D': impactRatings['D'] || 0,
-        'O': impactRatings['O'] || 0
-      }
-
       const newAchievement: Achievement = {
         id: 'a' + Date.now(),
         personId: currentPersonId,
@@ -88,7 +69,7 @@ export default function LogAchievement({
         title: title.trim(),
         evidence: evidence.trim(),
         cpqsdp: selectedCPQSDP as Array<'C' | 'P' | 'Q' | 'S' | 'D' | 'O'>,
-        impactRatings: allRatings,
+        impactRating: impactRating!,
         date: new Date().toISOString(),
         fileAttachment: fileAttachment
       }
@@ -100,7 +81,7 @@ export default function LogAchievement({
       setSelectedCommitId(null)
       setEvidence('')
       setSelectedCPQSDP([])
-      setImpactRatings({})
+      setImpactRating(null)
       setFileAttachment(null)
       setErrors({})
       onNavigate('my-impact')
@@ -261,23 +242,46 @@ export default function LogAchievement({
           </View>
         </View>
 
-        {/* Impact Sliders for Selected Parameters */}
-        {selectedCPQSDP.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.label}>Impact rating for each dimension</Text>
-            <Text style={styles.description}>Drag slider from left: Low Impact (0) to right: High Impact (10)</Text>
-            {selectedCPQSDP.map(key => (
-              <ImpactSlider
-                key={key}
-                label={`${key} — ${CPQSDP_LABELS[key]}`}
-                value={impactRatings[key] || 0}
-                onChange={value => updateImpactRating(key, value)}
-                color={CPQSDP_COLORS[key]}
-              />
+        {/* Impact Rating */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Overall impact rating</Text>
+          <Text style={styles.description}>Select 1–10</Text>
+          <View style={styles.ratingGrid}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(rating => (
+              <TouchableOpacity
+                key={rating}
+                onPress={() => setImpactRating(rating)}
+                style={[
+                  styles.ratingSquare,
+                  impactRating === rating && styles.ratingSquareSelected
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.ratingSquareText,
+                    impactRating === rating && styles.ratingSquareTextSelected
+                  ]}
+                >
+                  {rating}
+                </Text>
+              </TouchableOpacity>
             ))}
-            {errors.impactRatings && <Text style={styles.error}>{errors.impactRatings}</Text>}
           </View>
-        )}
+          {errors.impactRating && <Text style={styles.error}>{errors.impactRating}</Text>}
+          {impactRating && (
+            <View style={styles.ratingGuide}>
+              <Text style={styles.ratingGuideText}>
+                {impactRating <= 3
+                  ? '1–3 Minor'
+                  : impactRating <= 6
+                  ? '4–6 Moderate'
+                  : impactRating <= 8
+                  ? '7–8 Significant'
+                  : '9–10 Transformational'}
+              </Text>
+            </View>
+          )}
+        </View>
 
         {/* Save Button */}
         <TouchableOpacity
@@ -433,14 +437,15 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     textAlign: 'center'
   },
-  ratingContainer: {
+  ratingGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
     marginBottom: 12
   },
   ratingSquare: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     borderWidth: 0.5,
     borderColor: '#D0D0D0',
     borderRadius: 6,
@@ -448,27 +453,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff'
   },
-  ratingSquareActive: {
+  ratingSquareSelected: {
     backgroundColor: '#534AB7',
     borderColor: '#534AB7'
   },
-  ratingText: {
+  ratingSquareText: {
     fontSize: 12,
     color: '#666',
     fontWeight: '400'
   },
-  ratingTextActive: {
+  ratingSquareTextSelected: {
     color: '#fff',
     fontWeight: '500'
   },
   ratingGuide: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 4
+    paddingHorizontal: 4,
+    marginTop: 8
   },
   ratingGuideText: {
     fontSize: 11,
-    color: '#AAA'
+    color: '#888'
   },
   saveButton: {
     backgroundColor: '#534AB7',

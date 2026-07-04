@@ -52,7 +52,7 @@ export default function CEODashboard({ data }: CEODashboardProps) {
       cpqsdpScores[key] = '—'
     } else {
       cpqsdpScores[key] = (
-        matching.reduce((s, a) => s + (a.impactRatings[key] || 0), 0) / matching.length
+        matching.reduce((s, a) => s + a.impactRating, 0) / matching.length
       ).toFixed(1)
     }
   })
@@ -173,10 +173,7 @@ export default function CEODashboard({ data }: CEODashboardProps) {
 
             <View style={styles.achievementMeta}>
               <Text style={styles.metaText}>
-                {achievement.cpqsdp.join(', ')} · Avg impact:{' '}
-                {achievement.cpqsdp.length > 0
-                  ? (achievement.cpqsdp.reduce((sum, key) => sum + (achievement.impactRatings[key] || 0), 0) / achievement.cpqsdp.length).toFixed(1)
-                  : 0}/10
+                {achievement.cpqsdp.join(', ')} · Impact: {achievement.impactRating}/10
               </Text>
             </View>
           </View>

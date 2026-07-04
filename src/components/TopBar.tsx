@@ -30,20 +30,21 @@ export default function TopBar({ activeRole, onRoleChange, userRole = 'individua
       <View style={styles.right}>
         <Text style={styles.userName}>{userName}</Text>
         {allowedRoles.map(role => (
-          <View
+          <TouchableOpacity
             key={role}
+            onPress={() => onRoleChange(role as 'individual' | 'hr' | 'ceo')}
             style={[
               styles.button,
-              styles.buttonActive
+              activeRole === role ? styles.buttonActive : styles.buttonInactive
             ]}
           >
             <Text style={[
               styles.buttonLabel,
-              styles.buttonLabelActive
+              activeRole === role ? styles.buttonLabelActive : styles.buttonLabelInactive
             ]}>
-              {roleLabels[role]}
+              {roleLabels[role as 'individual' | 'hr' | 'ceo']}
             </Text>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
     </View>

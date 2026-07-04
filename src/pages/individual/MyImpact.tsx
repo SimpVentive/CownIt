@@ -16,11 +16,7 @@ export default function MyImpact({ data, currentPersonId }: MyImpactProps) {
 
   const avgRating =
     myAchievements.length > 0
-      ? (myAchievements.reduce((s, a) => {
-          const paramRatings = a.cpqsdp.map(key => a.impactRatings[key] || 0)
-          const avgForAchievement = paramRatings.length > 0 ? paramRatings.reduce((sum, r) => sum + r, 0) / paramRatings.length : 0
-          return s + avgForAchievement
-        }, 0) / myAchievements.length).toFixed(1)
+      ? (myAchievements.reduce((s, a) => s + a.impactRating, 0) / myAchievements.length).toFixed(1)
       : '—'
 
   const allDimensions = Array.from(
@@ -109,7 +105,7 @@ export default function MyImpact({ data, currentPersonId }: MyImpactProps) {
                       {achievement.cpqsdp.join(', ')}
                     </Text>
                     <Text style={styles.impactText}>
-                      Impact: {achievement.cpqsdp.length > 0 ? (achievement.cpqsdp.reduce((sum, key) => sum + (achievement.impactRatings[key] || 0), 0) / achievement.cpqsdp.length).toFixed(1) : 0}/10
+                      Impact: {achievement.impactRating}/10
                     </Text>
                   </View>
 
