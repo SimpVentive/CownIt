@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
-import { Paperclip } from 'lucide-react-native'
-import type { AppData, HRComment } from '../../data/seed'
+import { Paperclip, MessageCircle } from 'lucide-react-native'
+import type { AppData, HRComment, Message } from '../../data/seed'
 import { computeHealthScore } from '../../utils/healthScore'
 import { formatDateShort } from '../../utils/formatDate'
 import { LEVEL_COLORS, CPQSDP_COLORS } from '../../utils/constants'
@@ -22,6 +22,9 @@ export default function HRDrilldown({
 }: HRDrilldownProps) {
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
   const [savingComments, setSavingComments] = useState<Record<string, boolean>>({})
+  const [showMessageForm, setShowMessageForm] = useState(false)
+  const [messageDraft, setMessageDraft] = useState('')
+  const [messageSent, setMessageSent] = useState(false)
 
   if (!selectedPersonId) {
     return (
@@ -102,6 +105,67 @@ export default function HRDrilldown({
           <Text style={styles.healthBadgeText}>{healthScore}/100</Text>
         </View>
       </View>
+
+      {/* Message Block */}
+      {!showMessageForm ? (
+        <TouchableOpacity
+          onPress={() => setShowMessageForm(true)}
+          style={styles.sendMessageButton}
+        >
+          <MessageCircle size={14} color="#534AB7" />
+          <Text style={styles.sendMessageText}>Send message</Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.messageForm}>
+          <Text style={styles.messageFormLabel}>Message to {person.name}</Text>
+          <TextInput
+            multiline
+            placeholder="Type your message..."
+            value={messageDraft}
+            onChangeText={setMessageDraft}
+            style={styles.messageInput}
+          />
+          <View style={styles.messageButtonRow}>
+            <TouchableOpacity
+              onPress={() => {
+                setShowMessageForm(false)
+                setMessageDraft('')
+              }}
+              style={styles.cancelButton}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                const newMessage: Message = {
+                  id: 'msg' + Date.now(),
+                  fromRole: 'hr',
+                  fromName: 'HR',
+                  toPersonId: selectedPersonId,
+                  body: messageDraft.trim(),
+                  date: new Date().toISOString(),
+                  read: false
+                }
+                onDataChange('messages', [...data.messages, newMessage])
+                setShowMessageForm(false)
+                setMessageDraft('')
+                setMessageSent(true)
+                setTimeout(() => setMessageSent(false), 2000)
+              }}
+              disabled={messageDraft.trim().length < 3}
+              style={[
+                styles.sendButton,
+                messageDraft.trim().length < 3 && styles.sendButtonDisabled
+              ]}
+            >
+              <Text style={styles.sendButtonText}>Send</Text>
+            </TouchableOpacity>
+          </View>
+          {messageSent && (
+            <Text style={styles.messageSentConfirm}>Message sent ✓</Text>
+          )}
+        </View>
+      )}
 
       {/* Commits Section */}
       <View style={styles.section}>
@@ -545,5 +609,79 @@ const styles = StyleSheet.create({
   },
   postButtonDisabled: {
     opacity: 0.4
+  },
+  sendMessageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  sendMessageText: {
+    fontSize: 13,
+    color: '#534AB7'
+  },
+  messageForm: {
+    backgroundColor: '#EEEDFE',
+    borderWidth: 0.5,
+    borderColor: '#AFA9EC',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 10
+  },
+  messageFormLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#3C3489',
+    marginBottom: 8
+  },
+  messageInput: {
+    backgroundColor: '#fff',
+    borderWidth: 0.5,
+    borderColor: '#D0D0D0',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    fontSize: 13,
+    minHeight: 72,
+    textAlignVertical: 'top'
+  },
+  messageButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 8
+  },
+  cancelButton: {
+    borderWidth: 0.5,
+    borderColor: '#D0D0D0',
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 6
+  },
+  cancelButtonText: {
+    fontSize: 12,
+    color: '#666'
+  },
+  sendButton: {
+    backgroundColor: '#534AB7',
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 6
+  },
+  sendButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#fff'
+  },
+  sendButtonDisabled: {
+    opacity: 0.4
+  },
+  messageSentConfirm: {
+    fontSize: 12,
+    color: '#3B6D11',
+    marginTop: 6,
+    textAlign: 'right'
   }
 })
