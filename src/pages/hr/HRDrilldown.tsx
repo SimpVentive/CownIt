@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { Paperclip } from 'lucide-react-native'
 import type { AppData, HRComment } from '../../data/seed'
 import { computeHealthScore } from '../../utils/healthScore'
 import { formatDateShort } from '../../utils/formatDate'
@@ -146,58 +147,102 @@ export default function HRDrilldown({
           <Text style={styles.emptyText}>No achievements logged yet.</Text>
         ) : (
           personAchievements.map(achievement => {
-            const commit = data.commits.find(
-              c => c.id === achievement.commitId
-            )
-            const comments = data.hrComments.filter(
-              c => c.achievementId === achievement.id
-            )
+            const commit = data.commits.find(c => c.id === achievement.commitId)
+            const comments = data.hrComments.filter(c => c.achievementId === achievement.id)
+            const getImpactLabel = (rating: number): string => {
+              if (rating <= 3) return 'Minor impact'
+              if (rating <= 6) return 'Moderate impact'
+              if (rating <= 8) return 'Significant impact'
+              return 'Transformational impact'
+            }
 
             return (
-              <View
-                key={achievement.id}
-                style={styles.achievementCard}
-              >
-                <Text style={styles.achievementTitle}>
-                  {achievement.title}
-                </Text>
+              <View key={achievement.id} style={styles.achievementCard}>
+                {/* ROW 1 — Title + Impact Badge */}
+                <View style={styles.titleRow}>
+                  <Text style={styles.achievementTitle}>{achievement.title}</Text>
+                  <View style={styles.impactBadge}>
+                    <Text style={styles.impactBadgeText}>
+                      {achievement.impactRating}/10
+                    </Text>
+                  </View>
+                </View>
 
-                {/* Meta */}
+                {/* ROW 2 — Meta: Date, Level, CPQSDP */}
                 <View style={styles.metaRow}>
                   <Text style={styles.metaText}>
                     {formatDateShort(achievement.date)}
                   </Text>
                   {commit && (
-                    <Text style={styles.metaText}>
-                      {LEVEL_COLORS[commit.level].label}
-                    </Text>
+                    <View style={[
+                      styles.levelPill,
+                      { backgroundColor: LEVEL_COLORS[commit.level].bg }
+                    ]}>
+                      <Text style={[
+                        styles.levelPillText,
+                        { color: LEVEL_COLORS[commit.level].text }
+                      ]}>
+                        {LEVEL_COLORS[commit.level].label}
+                      </Text>
+                    </View>
                   )}
-                  <Text style={styles.metaText}>
-                    {achievement.cpqsdp.join(', ')}
-                  </Text>
-                  <Text style={styles.impactText}>
-                    Impact: {achievement.cpqsdp.length > 0 ? (achievement.cpqsdp.reduce((sum, key) => sum + (achievement.impactRatings[key] || 0), 0) / achievement.cpqsdp.length).toFixed(1) : 0}/10
-                  </Text>
+                  <View style={styles.cpqsdpDotsRow}>
+                    {achievement.cpqsdp.map(tag => (
+                      <View
+                        key={tag}
+                        style={[
+                          styles.cpqsdpDot,
+                          { backgroundColor: CPQSDP_COLORS[tag] }
+                        ]}
+                      />
+                    ))}
+                    <Text style={styles.cpqsdpLabels}>
+                      {achievement.cpqsdp.join(', ')}
+                    </Text>
+                  </View>
                 </View>
 
-                {/* Evidence */}
-                <Text style={styles.evidence}>{achievement.evidence}</Text>
+                {/* ROW 3 — Impact Guide Label */}
+                <Text style={styles.impactGuideLabel}>
+                  {getImpactLabel(achievement.impactRating)}
+                </Text>
 
-                {/* Comments */}
+                {/* ROW 4 — Evidence */}
+                <View style={styles.evidenceSection}>
+                  <Text style={styles.evidenceLabel}>Evidence</Text>
+                  <Text style={styles.evidenceText}>{achievement.evidence}</Text>
+                </View>
+
+                {/* ROW 5 — File Attachment */}
+                {achievement.fileAttachment && (
+                  <View style={styles.attachmentRow}>
+                    <Paperclip size={13} color="#534AB7" />
+                    <Text style={styles.attachmentText}>
+                      {achievement.fileAttachment}
+                    </Text>
+                  </View>
+                )}
+
+                {/* DIVIDER */}
+                <View style={styles.divider} />
+
+                {/* EXISTING COMMENTS */}
                 {comments.map(comment => (
                   <View key={comment.id} style={styles.commentBox}>
-                    <Text style={styles.commentLabel}>HR comment</Text>
+                    <View style={styles.commentHeader}>
+                      <Text style={styles.commentLabel}>HR comment</Text>
+                      <Text style={styles.commentMeta}>
+                        {comment.authorName} · {formatDateShort(comment.date)}
+                      </Text>
+                    </View>
                     <Text style={styles.commentBody}>{comment.body}</Text>
-                    <Text style={styles.commentMeta}>
-                      {comment.authorName} · {formatDateShort(comment.date)}
-                    </Text>
                   </View>
                 ))}
 
-                {/* Add Comment */}
-                <View style={styles.commentInput}>
+                {/* ADD COMMENT ROW */}
+                <View style={styles.commentInputRow}>
                   <TextInput
-                    placeholder="Add a comment..."
+                    placeholder="Add a comment on this achievement..."
                     value={commentDrafts[achievement.id] || ''}
                     onChangeText={text =>
                       setCommentDrafts({
@@ -205,7 +250,7 @@ export default function HRDrilldown({
                         [achievement.id]: text
                       })
                     }
-                    style={styles.textInput}
+                    style={styles.commentTextInput}
                   />
                   <TouchableOpacity
                     onPress={() => handlePostComment(achievement.id)}
@@ -341,44 +386,120 @@ const styles = StyleSheet.create({
     lineHeight: 20
   },
   achievementCard: {
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#F0F0F0',
-    paddingVertical: 12
+    backgroundColor: '#fff',
+    borderWidth: 0.5,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
   achievementTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
     color: '#1A1A1A',
-    marginBottom: 4
+    flex: 1
+  },
+  impactBadge: {
+    backgroundColor: '#EEEDFE',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4
+  },
+  impactBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#3C3489'
   },
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginVertical: 3,
+    marginTop: 6,
     alignItems: 'center'
   },
   metaText: {
     fontSize: 11,
     color: '#AAA'
   },
-  impactText: {
+  levelPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 20
+  },
+  levelPillText: {
+    fontSize: 11,
+    fontWeight: '500'
+  },
+  cpqsdpDotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4
+  },
+  cpqsdpDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4
+  },
+  cpqsdpLabels: {
+    fontSize: 11,
+    color: '#666'
+  },
+  impactGuideLabel: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 4,
+    fontStyle: 'italic'
+  },
+  evidenceSection: {
+    marginTop: 8
+  },
+  evidenceLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#1A1A1A'
+    color: '#888',
+    marginBottom: 3
   },
-  evidence: {
+  evidenceText: {
+    fontSize: 13,
+    color: '#444',
+    lineHeight: 20
+  },
+  attachmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6
+  },
+  attachmentText: {
     fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-    lineHeight: 18
+    color: '#534AB7'
+  },
+  divider: {
+    height: 0.5,
+    backgroundColor: '#F0F0F0',
+    marginTop: 12,
+    marginBottom: 0
   },
   commentBox: {
+    borderLeftWidth: 2,
+    borderLeftColor: '#534AB7',
     backgroundColor: '#EEEDFE',
-    borderRadius: 4,
+    borderRadius: 0,
+    borderTopRightRadius: 4,
+    borderBottomRightRadius: 4,
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginTop: 8
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
   commentLabel: {
     fontSize: 11,
@@ -386,36 +507,36 @@ const styles = StyleSheet.create({
     color: '#534AB7'
   },
   commentBody: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#444',
-    marginTop: 2,
+    marginTop: 3,
     lineHeight: 18
   },
   commentMeta: {
     fontSize: 11,
-    color: '#888',
-    marginTop: 3
+    color: '#888'
   },
-  commentInput: {
+  commentInputRow: {
     flexDirection: 'row',
     gap: 8,
     marginTop: 8,
-    alignItems: 'flex-end'
+    alignItems: 'center'
   },
-  textInput: {
+  commentTextInput: {
     flex: 1,
     borderWidth: 0.5,
-    borderColor: '#D0D0D0',
-    borderRadius: 6,
-    paddingHorizontal: 8,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    fontSize: 13
+    fontSize: 13,
+    backgroundColor: '#FAFAFA'
   },
   postButton: {
     backgroundColor: '#534AB7',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 6
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 8
   },
   postButtonText: {
     color: '#fff',
@@ -423,6 +544,6 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
   postButtonDisabled: {
-    opacity: 0.5
+    opacity: 0.4
   }
 })
