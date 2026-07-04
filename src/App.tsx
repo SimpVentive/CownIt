@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { SafeAreaView, View, ActivityIndicator, Text } from 'react-native'
+import { SafeAreaView, View, ActivityIndicator, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
 import type { AppData } from './data/seed'
 import { CURRENT_PERSON_ID } from './utils/constants'
 import * as api from './services/api'
@@ -25,6 +25,7 @@ import CEOHeatmap from './pages/ceo/CEOHeatmap'
 import CEOMessage from './pages/ceo/CEOMessage'
 
 type AppState = {
+  isAuthenticated: boolean
   activeRole: 'individual' | 'hr' | 'ceo'
   activePage: string
   selectedPersonId: string | null
@@ -35,6 +36,7 @@ type AppState = {
 }
 
 const initialState: AppState = {
+  isAuthenticated: false,
   activeRole: 'individual',
   activePage: 'my-commits',
   selectedPersonId: null,
@@ -47,54 +49,61 @@ const initialState: AppState = {
     messages: [],
     hrComments: []
   },
-  isLoading: true,
+  isLoading: false,
   error: null
 }
 
 export default function App() {
   const [state, setState] = useState<AppState>(initialState)
+  const [loginUserId, setLoginUserId] = useState('')
+  const [loginLoading, setLoginLoading] = useState(false)
 
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        // Login as default user
-        await api.login(CURRENT_PERSON_ID, 'individual')
-
-        // Fetch all data in parallel
-        const [people, commits, achievements, monthlyUpdates, messages, hrComments] = await Promise.all([
-          api.fetchPeople(),
-          api.fetchCommits(),
-          api.fetchAchievements(),
-          api.fetchMonthlyUpdates(),
-          api.fetchMessages(),
-          api.fetchHRComments()
-        ])
-
-        setState(prev => ({
-          ...prev,
-          data: {
-            people,
-            commits,
-            achievements,
-            monthlyUpdates,
-            messages,
-            hrComments
-          },
-          isLoading: false,
-          error: null
-        }))
-      } catch (err) {
-        console.error('Failed to initialize app:', err)
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: err instanceof Error ? err.message : 'Failed to load data'
-        }))
-      }
+  const handleLogin = async () => {
+    if (!loginUserId.trim()) {
+      setState(prev => ({ ...prev, error: 'Please enter a user ID' }))
+      return
     }
 
-    initializeApp()
-  }, [])
+    setLoginLoading(true)
+    try {
+      // Attempt login
+      await api.login(loginUserId, 'individual')
+
+      // Fetch all data in parallel
+      const [people, commits, achievements, monthlyUpdates, messages, hrComments] = await Promise.all([
+        api.fetchPeople(),
+        api.fetchCommits(),
+        api.fetchAchievements(),
+        api.fetchMonthlyUpdates(),
+        api.fetchMessages(),
+        api.fetchHRComments()
+      ])
+
+      setState(prev => ({
+        ...prev,
+        isAuthenticated: true,
+        data: {
+          people,
+          commits,
+          achievements,
+          monthlyUpdates,
+          messages,
+          hrComments
+        },
+        isLoading: false,
+        error: null
+      }))
+      setLoginUserId('')
+    } catch (err) {
+      console.error('Failed to login:', err)
+      setState(prev => ({
+        ...prev,
+        error: err instanceof Error ? err.message : 'Login failed'
+      }))
+    } finally {
+      setLoginLoading(false)
+    }
+  }
 
   const handleRoleChange = (role: 'individual' | 'hr' | 'ceo') => {
     const defaultPages = {
@@ -188,17 +197,43 @@ export default function App() {
     )
   }
 
-  if (state.error) {
+  if (!state.isAuthenticated) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-        <Text style={{ color: '#993C1D', fontSize: 16, textAlign: 'center', paddingHorizontal: 20 }}>
-          Error: {state.error}
-        </Text>
+      <SafeAreaView style={[styles.container, styles.loginContainer]}>
+        <View style={styles.loginForm}>
+          <Text style={styles.loginTitle}>CownIt</Text>
+          <Text style={styles.loginSubtitle}>Commit & Own It</Text>
+
+          <Text style={styles.loginLabel}>Enter User ID</Text>
+          <TextInput
+            placeholder="e.g., p1, p2, p3, p4"
+            value={loginUserId}
+            onChangeText={setLoginUserId}
+            style={styles.loginInput}
+            editable={!loginLoading}
+          />
+
+          {state.error && <Text style={styles.loginError}>{state.error}</Text>}
+
+          <TouchableOpacity
+            onPress={handleLogin}
+            disabled={loginLoading}
+            style={[styles.loginButton, loginLoading && styles.loginButtonDisabled]}
+          >
+            {loginLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.loginButtonText}>Login</Text>
+            )}
+          </TouchableOpacity>
+
+          <Text style={styles.loginHint}>Demo users: p1, p2, p3, p4</Text>
+        </View>
       </SafeAreaView>
     )
   }
 
-  const currentUser = state.data.people.find(p => p.id === CURRENT_PERSON_ID)
+  const currentUser = state.data.people.find(p => p.id === loginUserId || p.id === CURRENT_PERSON_ID)
   const userRole = currentUser?.role || 'individual'
 
   return (
@@ -229,3 +264,77 @@ export default function App() {
     </SafeAreaView>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff'
+  },
+  loginContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20
+  },
+  loginForm: {
+    width: '100%',
+    maxWidth: 350,
+    paddingHorizontal: 20,
+    paddingVertical: 30
+  },
+  loginTitle: {
+    fontSize: 32,
+    fontWeight: '500',
+    color: '#1A1A1A',
+    textAlign: 'center',
+    marginBottom: 4
+  },
+  loginSubtitle: {
+    fontSize: 13,
+    color: '#888',
+    textAlign: 'center',
+    marginBottom: 30
+  },
+  loginLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#1A1A1A',
+    marginBottom: 8
+  },
+  loginInput: {
+    borderWidth: 0.5,
+    borderColor: '#D0D0D0',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    marginBottom: 16,
+    backgroundColor: '#fff'
+  },
+  loginButton: {
+    backgroundColor: '#534AB7',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginBottom: 16
+  },
+  loginButtonDisabled: {
+    opacity: 0.5
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500'
+  },
+  loginError: {
+    color: '#993C1D',
+    fontSize: 12,
+    marginBottom: 12,
+    textAlign: 'center'
+  },
+  loginHint: {
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center'
+  }
+})
