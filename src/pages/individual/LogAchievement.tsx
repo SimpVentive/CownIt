@@ -265,7 +265,7 @@ export default function LogAchievement({
         {selectedCPQSDP.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.label}>Impact rating for each dimension</Text>
-            <Text style={styles.description}>Drag slider from left to right — 0 to 10</Text>
+            <Text style={styles.description}>Drag slider from left: Low Impact (0) to right: High Impact (10)</Text>
             {selectedCPQSDP.map(key => (
               <ImpactSlider
                 key={key}
