@@ -7,6 +7,7 @@ import * as api from './services/api'
 import TopBar from './components/TopBar'
 import Sidebar from './components/Sidebar'
 import BottomTabs from './components/BottomTabs'
+import CommitmentModal from './components/CommitmentModal'
 
 import MyCommits from './pages/individual/MyCommits'
 import LogAchievement from './pages/individual/LogAchievement'
@@ -129,6 +130,14 @@ export default function App() {
     setState(prev => ({ ...prev, selectedRecipientId: personId }))
   }
 
+  // Calculate commitment count for current individual
+  const commitmentCount = state.data.commits.filter(
+    c => c.personId === CURRENT_PERSON_ID
+  ).length
+
+  // Show commitment modal if individual has less than 3 commitments
+  const showCommitmentModal = state.activeRole === 'individual' && commitmentCount < 3
+
   const renderPage = () => {
     const props = {
       data: state.data,
@@ -209,6 +218,14 @@ export default function App() {
           <View style={{ flex: 1 }}>{renderPage()}</View>
         </View>
       )}
+
+      <CommitmentModal
+        visible={showCommitmentModal}
+        commitmentCount={commitmentCount}
+        onNavigateToAddCommitment={() => {
+          handlePageChange('my-commits')
+        }}
+      />
     </SafeAreaView>
   )
 }
