@@ -13,6 +13,7 @@ import LogAchievement from './pages/individual/LogAchievement'
 import MyImpact from './pages/individual/MyImpact'
 import IndividualMessages from './pages/individual/IndividualMessages'
 
+import HRDashboard from './pages/hr/HRDashboard'
 import HRPeople from './pages/hr/HRPeople'
 import HRDrilldown from './pages/hr/HRDrilldown'
 import HRReminders from './pages/hr/HRReminders'
@@ -97,7 +98,7 @@ export default function App() {
   const handleRoleChange = (role: 'individual' | 'hr' | 'ceo') => {
     const defaultPages = {
       individual: 'my-commits',
-      hr: 'hr-people',
+      hr: 'hr-dashboard',
       ceo: 'ceo-dashboard'
     }
     setState(prev => ({
@@ -149,6 +150,8 @@ export default function App() {
         return <MyImpact {...props} />
       case 'messages':
         return <IndividualMessages {...props} />
+      case 'hr-dashboard':
+        return <HRDashboard {...props} />
       case 'hr-people':
         return <HRPeople {...props} />
       case 'hr-drilldown':

@@ -18,6 +18,7 @@ export default function Sidebar({ activeRole, activePage, onPageChange }: Sideba
   const getNavItems = (): NavItem[] => {
     if (activeRole === 'hr') {
       return [
+        { page: 'hr-dashboard', icon: <LayoutDashboard size={16} />, label: 'Dashboard' },
         { page: 'hr-people', icon: <Users size={16} />, label: 'People' },
         { page: 'hr-drilldown', icon: <User size={16} />, label: 'Individual view' },
         { page: 'hr-reminders', icon: <Bell size={16} />, label: 'Reminders' }
