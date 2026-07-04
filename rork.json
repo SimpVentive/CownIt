@@ -1,0 +1,15 @@
+{
+  "$schema": "https://rork.com/schema/rork.json",
+  "apps": [
+    {
+      "name": "CownIt",
+      "path": "android",
+      "framework": "kotlin"
+    },
+    {
+      "name": "CownIt iOS",
+      "path": "ios-cownit",
+      "framework": "swift"
+    }
+  ]
+}

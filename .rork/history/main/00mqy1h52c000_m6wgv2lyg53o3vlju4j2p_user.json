@@ -1,0 +1,8 @@
+{
+  "id": "m6wgv2lyg53o3vlju4j2p",
+  "role": "user",
+  "content": "Build a React app called CownIt (tagline: \"Commit & Own It\"). Set up a clean top navigation bar with the logo on the left and a role switcher on the right with three buttons: Individual, HR, CEO. Default to Individual role. Use a flat, professional design — white surfaces, 0.5px borders, no gradients or shadows. Sidebar navigation that changes based on active role.\nMake sure that the visuals and the fonts, icons are pleasant and relevant size\nAnd are world class...\nMAKE THE APP FOR BOTH iOS and Android",
+  "attachments": [],
+  "sourceAttachments": [],
+  "userId": "b258fae3-c1eb-41ac-9414-216cf9dc90af"
+}

@@ -1,0 +1,61 @@
+name: Deploy React App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Frontend .env
+      - name: Create Frontend .env
+        run: |
+          echo "EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" > .env
+      
+      - name: Install Frontend Dependencies
+        run: bun install
+
+      - name: Build Frontend
+        run: bun expo export --platform web
+
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+
+            cd /var/www/cownit.l-kurve.com/CownIt
+
+            git pull origin main
+
+            # ---------- Frontend ----------
+            echo "EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" > .env
+
+            bun install
+            bun expo export --platform web
+
+            # ---------- Backend ----------
+            cd server
+
+            echo "BACKENDPORT=${{ secrets.BACKENDPORT }}" > .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+
+            bun install
+            
+            sudo systemctl restart cownit-server
+            
+            sudo systemctl reload apache2

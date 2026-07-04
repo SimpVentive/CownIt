@@ -1,14 +1,15 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity,Pressable, StyleSheet } from 'react-native'
 
 interface TopBarProps {
   activeRole: 'individual' | 'hr' | 'ceo'
   onRoleChange: (role: 'individual' | 'hr' | 'ceo') => void
   userRole?: 'individual' | 'hr' | 'ceo'
-  userName?: string
+  userName?: string,
+  onLogout?: () => void
 }
 
-export default function TopBar({ activeRole, onRoleChange, userRole = 'individual', userName = 'User' }: TopBarProps) {
+export default function TopBar({ activeRole, onRoleChange, userRole = 'individual', userName = 'User', onLogout }: TopBarProps) {
   console.log('TopBar userRole:', userRole, 'userName:', userName)
   const allowedRoles = userRole ? [userRole] : ['individual', 'hr', 'ceo']
   const roleLabels: Record<'individual' | 'hr' | 'ceo', string> = {
@@ -46,6 +47,20 @@ export default function TopBar({ activeRole, onRoleChange, userRole = 'individua
             </Text>
           </TouchableOpacity>
         ))}
+
+        
+      </View>
+      <View>
+        {onLogout && (
+          <Pressable
+            style={styles.logoutButton}
+            onPress={onLogout}
+          >
+            <Text style={styles.logoutText}>
+              Logout
+            </Text>
+          </Pressable>
+        )}
       </View>
     </View>
   )
@@ -113,5 +128,18 @@ const styles = StyleSheet.create({
   },
   buttonLabelInactive: {
     color: '#666'
-  }
+  },
+  logoutButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#dc3545",
+  },
+
+  logoutText: {
+    color: "#dc3545",
+    fontSize: 13,
+    fontWeight: "500",
+  },
 })

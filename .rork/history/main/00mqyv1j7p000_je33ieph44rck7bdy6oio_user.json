@@ -1,0 +1,13 @@
+{
+  "id": "je33ieph44rck7bdy6oio",
+  "role": "user",
+  "content": "@[github:https%3A%2F%2Fgithub.com%2Fsimpventive%2Fcownit:GitHub Sync - simpventive/cownit] \nThis is the repository",
+  "attachments": [],
+  "sourceAttachments": [
+    {
+      "type": "github",
+      "url": "https://github.com/simpventive/cownit"
+    }
+  ],
+  "userId": "b258fae3-c1eb-41ac-9414-216cf9dc90af"
+}
