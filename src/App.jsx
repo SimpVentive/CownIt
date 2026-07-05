@@ -19,7 +19,7 @@ import TopBar from "./components/TopBar";
 import Sidebar from "./components/Sidebar";
 import MobileNav from "./components/MobileNav";
 import ContentArea from "./components/ContentArea";
-import Login from "./pages/Login";
+import Auth from "./pages/Auth";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -120,7 +120,7 @@ export default function App() {
 
   if (!isAuthenticated) {
     return (
-      <Login
+      <Auth
         onLoginSuccess={handleLoginSuccess}
       />
     );
