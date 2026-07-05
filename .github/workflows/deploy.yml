@@ -1,0 +1,55 @@
+name: Deploy Web App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Build web app
+      - name: Install Web Dependencies
+        working-directory: web
+        run: bun install
+
+      - name: Build Web App
+        working-directory: web
+        run: bun run build
+
+      # Deploy to server
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+
+            cd /var/www/cownit.l-kurve.com/CownIt
+
+            git pull origin main
+
+            # Build and deploy web app
+            cd web
+            bun install
+            bun run build
+
+            # Restart server and reload apache
+            cd ..
+            cd server
+            bun install
+
+            sudo systemctl restart cownit-server
+            sudo systemctl reload apache2
