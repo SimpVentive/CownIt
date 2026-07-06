@@ -155,11 +155,21 @@ app.get('/api/monthlyUpdates', verifyToken, async (req, res) => {
 
 app.post('/api/monthlyUpdates', verifyToken, async (req, res) => {
   const { id, personId, month, year, note, updatedAt } = req.body
+  const parsedDate = new Date(updatedAt);
+
+  if (isNaN(parsedDate.getTime())) {
+    return res.status(400).json({ error: "Invalid date" });
+  }
+
+  const datefield = parsedDate
+    .toISOString()
+    .slice(0, 19)
+    .replace("T", " ");
   try {
     await dbRun(
       `INSERT INTO monthlyUpdates (id, personId, month, year, note, updatedAt)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, personId, month, year, note, updatedAt]
+      [id, personId, month, year, note, datefield]
     )
     res.json({ id })
   } catch (err) {
@@ -179,10 +189,21 @@ app.get('/api/messages', verifyToken, async (req, res) => {
 
 app.post('/api/messages', verifyToken, async (req, res) => {
   const { id, fromRole, fromName, toPersonId, body, date, read } = req.body
+  const parsedDate = new Date(date);
+
+  if (isNaN(parsedDate.getTime())) {
+    return res.status(400).json({ error: "Invalid date" });
+  }
+
+  const datefield = parsedDate
+    .toISOString()
+    .slice(0, 19)
+    .replace("T", " ");
+
   try {
     await dbRun(
       'INSERT INTO messages (id, fromRole, fromName, toPersonId, body, date, isRead)\n       VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, fromRole, fromName, toPersonId, body, date, read ? 1 : 0]
+      [id, fromRole, fromName, toPersonId, body, datefield, read ? 1 : 0]
     )
     res.json({ id })
   } catch (err) {
