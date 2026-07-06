@@ -17,12 +17,6 @@ android {
         versionName = "1.0"
     }
 
-<<<<<<< HEAD
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
-=======
     signingConfigs {
         create("rorkPlayUpload") {
             storeFile = file("/home/user/rork-app/android/app/play-upload-key.jks")
@@ -36,7 +30,6 @@ android {
         release {
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("rorkPlayUpload")
->>>>>>> 4bf9e85d0aad0573bdb35b4b2b04a136edc4b6bf
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

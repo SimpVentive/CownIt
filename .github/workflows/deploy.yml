@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-name: Deploy React App
-=======
 name: Deploy Web App
->>>>>>> 4bf9e85d0aad0573bdb35b4b2b04a136edc4b6bf
 
 on:
   push:
@@ -20,19 +16,6 @@ jobs:
         with:
           bun-version: latest
 
-<<<<<<< HEAD
-      # Frontend .env
-      - name: Create Frontend .env
-        run: |
-          echo "EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" > .env
-      
-      - name: Install Frontend Dependencies
-        run: bun install
-
-      - name: Build Frontend
-        run: bun expo export --platform web
-
-=======
       # Build web app
       - name: Install Web Dependencies
         working-directory: web
@@ -43,7 +26,6 @@ jobs:
         run: bun run build
 
       # Deploy to server
->>>>>>> 4bf9e85d0aad0573bdb35b4b2b04a136edc4b6bf
       - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -57,26 +39,6 @@ jobs:
 
             cd /var/www/cownit.l-kurve.com/CownIt
 
-<<<<<<< HEAD
-            git pull origin master
-
-            # ---------- Frontend ----------
-            echo "EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" > .env
-
-            bun install
-            bun expo export --platform web
-
-            # ---------- Backend ----------
-            cd server
-
-            echo "BACKENDPORT=${{ secrets.BACKENDPORT }}" > .env
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-
-            bun install
-            
-            sudo systemctl restart cownit-server
-            
-=======
             git pull origin main
 
             # Build and deploy web app
@@ -90,5 +52,4 @@ jobs:
             bun install
 
             sudo systemctl restart cownit-server
->>>>>>> 4bf9e85d0aad0573bdb35b4b2b04a136edc4b6bf
             sudo systemctl reload apache2
