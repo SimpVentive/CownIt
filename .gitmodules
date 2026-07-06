@@ -1,0 +1,4 @@
+[submodule "cownit"]
+	path = cownit
+	url = https://github.com/simpventive/cownit.git
+	branch = main

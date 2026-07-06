@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 name: Deploy React App
+=======
+name: Deploy Web App
+>>>>>>> 4bf9e85d0aad0573bdb35b4b2b04a136edc4b6bf
 
 on:
   push:
@@ -16,6 +20,7 @@ jobs:
         with:
           bun-version: latest
 
+<<<<<<< HEAD
       # Frontend .env
       - name: Create Frontend .env
         run: |
@@ -27,6 +32,18 @@ jobs:
       - name: Build Frontend
         run: bun expo export --platform web
 
+=======
+      # Build web app
+      - name: Install Web Dependencies
+        working-directory: web
+        run: bun install
+
+      - name: Build Web App
+        working-directory: web
+        run: bun run build
+
+      # Deploy to server
+>>>>>>> 4bf9e85d0aad0573bdb35b4b2b04a136edc4b6bf
       - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -40,6 +57,7 @@ jobs:
 
             cd /var/www/cownit.l-kurve.com/CownIt
 
+<<<<<<< HEAD
             git pull origin master
 
             # ---------- Frontend ----------
@@ -58,4 +76,19 @@ jobs:
             
             sudo systemctl restart cownit-server
             
+=======
+            git pull origin main
+
+            # Build and deploy web app
+            cd web
+            bun install
+            bun run build
+
+            # Restart server and reload apache
+            cd ..
+            cd server
+            bun install
+
+            sudo systemctl restart cownit-server
+>>>>>>> 4bf9e85d0aad0573bdb35b4b2b04a136edc4b6bf
             sudo systemctl reload apache2
