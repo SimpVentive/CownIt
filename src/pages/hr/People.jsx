@@ -42,7 +42,7 @@ function computeHealthScore(personId, data) {
   return Math.round(score);
 }
 
-export default function People({ state }) {
+export default function People({ state, onSelectPerson  }) {
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
@@ -154,6 +154,12 @@ export default function People({ state }) {
             <Text style={styles.info}>
               Last Active: {getLastActive(person.id)}
             </Text>
+            <TouchableOpacity
+  style={styles.viewButton}
+  onPress={() => onSelectPerson(person.id)}
+>
+  <Text style={styles.viewButtonText}>View</Text>
+</TouchableOpacity>
           </View>
         );
       })}
@@ -221,4 +227,17 @@ const styles = StyleSheet.create({
     color: '#555',
     marginBottom: 6,
   },
+  viewButton: {
+  marginTop: 12,
+  alignSelf: 'flex-start',
+  backgroundColor: '#000',
+  paddingHorizontal: 18,
+  paddingVertical: 8,
+  borderRadius: 8,
+},
+
+viewButtonText: {
+  color: '#fff',
+  fontWeight: '600',
+},
 });

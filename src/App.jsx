@@ -137,6 +137,7 @@ export default function App() {
     setState((prev) => ({
       ...prev,
       selectedPersonId: personId,
+      activePage: "drilldown",
     }));
   };
 

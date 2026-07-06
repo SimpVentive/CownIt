@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet
 } from 'react-native';
+import { createHRComment } from '../../services/api';
 
 const COMMIT_STYLES = {
   self: { bg: '#EEEDFE', text: '#3C3489' },
@@ -58,7 +59,7 @@ function Drilldown({ state, onDataChange }) {
       body,
       date: new Date().toISOString()
     };
-
+    createHRComment(newComment);
     onDataChange('hrComments', [
       ...state.data.hrComments,
       newComment

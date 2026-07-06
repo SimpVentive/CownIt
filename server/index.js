@@ -211,6 +211,18 @@ app.get('/api/hrComments', verifyToken, async (req, res) => {
 
 app.post('/api/hrComments', verifyToken, async (req, res) => {
   const { id, achievementId, authorName, body, date } = req.body
+
+  const parsedDate = new Date(date);
+  
+  if (isNaN(parsedDate.getTime())) {
+    return res.status(400).json({ error: "Invalid date" });
+  }
+
+  const datefield = parsedDate
+    .toISOString()
+    .slice(0, 19)
+    .replace("T", " ");
+
   try {
     await dbRun(
       `INSERT INTO hrComments (id, achievementId, authorName, body, date)
