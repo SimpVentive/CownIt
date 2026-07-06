@@ -119,16 +119,23 @@ app.get('/api/achievements', verifyToken, async (req, res) => {
 
 app.post('/api/achievements', verifyToken, async (req, res) => {
   const { id, personId, commitId, title, evidence, cpqsdp, impactRating, date, fileAttachment } = req.body
-  // Convert ISO date to MySQL DATETIME
-  date = new Date(date)
+  
+  const parsedDate = new Date(date);
+
+  if (isNaN(parsedDate.getTime())) {
+    return res.status(400).json({ error: "Invalid date" });
+  }
+
+  const datefield = parsedDate
     .toISOString()
     .slice(0, 19)
     .replace("T", " ");
-  try {
+  
+    try {
     await dbRun(
       `INSERT INTO achievements (id, personId, commitId, title, evidence, cpqsdp, impactRating, date, fileAttachment)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, personId, commitId, title, evidence, JSON.stringify(cpqsdp), impactRating, date, fileAttachment]
+      [id, personId, commitId, title, evidence, JSON.stringify(cpqsdp), impactRating, datefield, fileAttachment]
     )
     res.json({ id })
   } catch (err) {
