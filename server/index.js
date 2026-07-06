@@ -1,3 +1,6 @@
+import dotenv from 'dotenv'
+dotenv.config()
+
 import express from 'express'
 import cors from 'cors'
 import { initDb, dbRun, dbGet, dbAll } from './db.js'
@@ -146,7 +149,7 @@ app.post('/api/monthlyUpdates', verifyToken, async (req, res) => {
 // Messages
 app.get('/api/messages', verifyToken, async (req, res) => {
   try {
-    const messages = await dbAll('SELECT * FROM messages ORDER BY date DESC')
+    const messages = await dbAll('SELECT id, fromRole, fromName, toPersonId, body, date, isRead as `read`, created_at FROM messages ORDER BY date DESC')
     res.json(messages)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -157,8 +160,7 @@ app.post('/api/messages', verifyToken, async (req, res) => {
   const { id, fromRole, fromName, toPersonId, body, date, read } = req.body
   try {
     await dbRun(
-      `INSERT INTO messages (id, fromRole, fromName, toPersonId, body, date, read)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      'INSERT INTO messages (id, fromRole, fromName, toPersonId, body, date, isRead)\n       VALUES (?, ?, ?, ?, ?, ?, ?)',
       [id, fromRole, fromName, toPersonId, body, date, read ? 1 : 0]
     )
     res.json({ id })
@@ -169,7 +171,7 @@ app.post('/api/messages', verifyToken, async (req, res) => {
 
 app.put('/api/messages/:id/read', verifyToken, async (req, res) => {
   try {
-    await dbRun('UPDATE messages SET read = 1 WHERE id = ?', [req.params.id])
+    await dbRun('UPDATE messages SET isRead = 1 WHERE id = ?', [req.params.id])
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })

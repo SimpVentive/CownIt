@@ -1,62 +1,78 @@
-import sqlite3 from 'sqlite3'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import dotenv from 'dotenv'
+import mysql from 'mysql2/promise'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const dbPath = join(__dirname, 'cownit.db')
+dotenv.config()
 
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) console.error('Database connection error:', err)
-  else console.log('Connected to SQLite database')
-})
+const {
+  DB_HOST = 'localhost',
+  DB_PORT = '3306',
+  DB_USER = 'root',
+  DB_PASSWORD = '',
+  DB_NAME = 'cownit',
+} = process.env
 
-// Promisify db methods
-const dbRun = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-      if (err) reject(err)
-      else resolve(this)
-    })
+async function createPool() {
+  const rootPool = await mysql.createPool({
+    host: DB_HOST,
+    port: Number(DB_PORT),
+    user: DB_USER,
+    password: DB_PASSWORD,
+    waitForConnections: true,
+    connectionLimit: 1,
   })
 
-const dbGet = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err)
-      else resolve(row)
-    })
-  })
+  await rootPool.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\``)
+  await rootPool.end()
 
-const dbAll = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) reject(err)
-      else resolve(rows)
-    })
+  return mysql.createPool({
+    host: DB_HOST,
+    port: Number(DB_PORT),
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
   })
+}
 
-// Initialize database schema
+const pool = await createPool()
+console.log(`Connected to MySQL database ${DB_HOST}:${DB_PORT}/${DB_NAME}`)
+
+const dbRun = async (sql, params = []) => {
+  const [result] = await pool.execute(sql, params)
+  return result
+}
+
+const dbGet = async (sql, params = []) => {
+  const [rows] = await pool.execute(sql, params)
+  return rows[0]
+}
+
+const dbAll = async (sql, params = []) => {
+  const [rows] = await pool.execute(sql, params)
+  return rows
+}
+
 export async function initDb() {
   try {
-    // People table
     await dbRun(`
       CREATE TABLE IF NOT EXISTS people (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        initials TEXT NOT NULL,
-        department TEXT NOT NULL,
-        avatarColor TEXT NOT NULL,
-        avatarTextColor TEXT NOT NULL,
+        id VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        initials VARCHAR(10) NOT NULL,
+        department VARCHAR(255) NOT NULL,
+        avatarColor VARCHAR(50) NOT NULL,
+        avatarTextColor VARCHAR(50) NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `)
 
-    // Commits table
     await dbRun(`
       CREATE TABLE IF NOT EXISTS commits (
-        id TEXT PRIMARY KEY,
-        personId TEXT NOT NULL,
-        level TEXT NOT NULL,
+        id VARCHAR(255) PRIMARY KEY,
+        personId VARCHAR(255) NOT NULL,
+        level VARCHAR(50) NOT NULL,
         statement TEXT NOT NULL,
         createdAt DATETIME NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -64,13 +80,12 @@ export async function initDb() {
       )
     `)
 
-    // Achievements table
     await dbRun(`
       CREATE TABLE IF NOT EXISTS achievements (
-        id TEXT PRIMARY KEY,
-        personId TEXT NOT NULL,
-        commitId TEXT NOT NULL,
-        title TEXT NOT NULL,
+        id VARCHAR(255) PRIMARY KEY,
+        personId VARCHAR(255) NOT NULL,
+        commitId VARCHAR(255) NOT NULL,
+        title VARCHAR(255) NOT NULL,
         evidence TEXT NOT NULL,
         cpqsdp TEXT NOT NULL,
         impactRating INTEGER NOT NULL,
@@ -82,11 +97,10 @@ export async function initDb() {
       )
     `)
 
-    // Monthly Updates table
     await dbRun(`
       CREATE TABLE IF NOT EXISTS monthlyUpdates (
-        id TEXT PRIMARY KEY,
-        personId TEXT NOT NULL,
+        id VARCHAR(255) PRIMARY KEY,
+        personId VARCHAR(255) NOT NULL,
         month INTEGER NOT NULL,
         year INTEGER NOT NULL,
         note TEXT NOT NULL,
@@ -96,27 +110,25 @@ export async function initDb() {
       )
     `)
 
-    // Messages table
     await dbRun(`
       CREATE TABLE IF NOT EXISTS messages (
-        id TEXT PRIMARY KEY,
-        fromRole TEXT NOT NULL,
-        fromName TEXT NOT NULL,
-        toPersonId TEXT NOT NULL,
+        id VARCHAR(255) PRIMARY KEY,
+        fromRole VARCHAR(100) NOT NULL,
+        fromName VARCHAR(255) NOT NULL,
+        toPersonId VARCHAR(255) NOT NULL,
         body TEXT NOT NULL,
         date DATETIME NOT NULL,
-        read BOOLEAN DEFAULT 0,
+        isRead TINYINT(1) DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (toPersonId) REFERENCES people(id)
       )
     `)
 
-    // HR Comments table
     await dbRun(`
       CREATE TABLE IF NOT EXISTS hrComments (
-        id TEXT PRIMARY KEY,
-        achievementId TEXT NOT NULL,
-        authorName TEXT NOT NULL,
+        id VARCHAR(255) PRIMARY KEY,
+        achievementId VARCHAR(255) NOT NULL,
+        authorName VARCHAR(255) NOT NULL,
         body TEXT NOT NULL,
         date DATETIME NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -130,4 +142,4 @@ export async function initDb() {
   }
 }
 
-export { dbRun, dbGet, dbAll, db }
+export { dbRun, dbGet, dbAll }

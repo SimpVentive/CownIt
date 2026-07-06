@@ -1,20 +1,56 @@
 # CownIt Backend Server
 
-SQLite + Node.js/Express backend for the CownIt commitment tracking application.
+Node.js + Express backend using MySQL for the CownIt commitment tracking application.
 
 ## Setup
 
+1. Install dependencies:
+
 ```bash
+cd server
 npm install
+```
+
+2. Create a `.env` file from the example:
+
+```bash
+copy .env.example .env
+```
+
+3. Configure MySQL connection in `.env`.
+
+4. Start the server:
+
+```bash
 npm start
 ```
 
-Server runs on `http://localhost:3001`
+For development with automatic reload:
+
+```bash
+npm run dev
+```
+
+Server runs on `http://localhost:6001` by default.
+
+## Environment Variables
+
+Create `server/.env` with:
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=cownit
+JWT_SECRET=cownit-secret-key-dev
+BACKENDPORT=6001
+```
 
 ## Database
 
-- **SQLite**: File-based at `cownit.db` (auto-created on first run)
-- **Auto-seed**: Initial 4 people loaded on first startup
+- **MySQL**: Database is created automatically if it does not exist
+- **Auto-seed**: Initial people are inserted on first startup if the `people` table is empty
 - **Tables**: people, commits, achievements, monthlyUpdates, messages, hrComments
 
 ## API Routes
@@ -48,8 +84,9 @@ Server runs on `http://localhost:3001`
 
 ## Authentication
 
-All endpoints (except `/auth/login` and `/health`) require a JWT token in the `Authorization: Bearer <token>` header.
+All endpoints (except `/api/auth/login` and `/api/health`) require a JWT token in the `Authorization: Bearer <token>` header.
 
-## Next Steps
+## Notes
 
-Update the React app to use the API client at `../cownit/src/services/api.js` instead of direct state management.
+- The server now uses MySQL instead of SQLite.
+- Make sure your MySQL user has rights to create databases and tables.

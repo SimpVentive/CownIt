@@ -1,5 +1,4 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-console.log(API_URL);
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:6001/api'
 let token = null
 
 export const setToken = (newToken) => {

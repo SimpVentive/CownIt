@@ -21,7 +21,7 @@ const USERS = {
   ceo: [{ id: "ceo-user", name: "CEO", password: "password" }],
 };
 
-export default function Login({ onLoginSuccess }) {
+export default function Login({ onLoginSuccess, errorMessage }) {
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
   const [password, setPassword] = useState("");
@@ -149,10 +149,10 @@ export default function Login({ onLoginSuccess }) {
           </>
         ) : null}
 
-        {error ? (
+        {(error || errorMessage) ? (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>
-              {error}
+              {error || errorMessage}
             </Text>
           </View>
         ) : null}
