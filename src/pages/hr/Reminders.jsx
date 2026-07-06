@@ -70,7 +70,7 @@ function Reminders({ state, onDataChange }) {
         date: new Date().toISOString(),
         read: false,
       }));
-
+    msgs.forEach((msg) => createMessage(msg));
     onDataChange("messages", [...state.data.messages, ...msgs]);
     setSentIds(overduePeople.map((p) => p.id));
   };
