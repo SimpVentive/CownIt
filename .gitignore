@@ -13,6 +13,7 @@ app.json
 .gradle/
 build/
 local.properties
+dist/
 
 # Android
 *.apk
