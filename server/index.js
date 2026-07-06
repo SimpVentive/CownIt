@@ -119,6 +119,11 @@ app.get('/api/achievements', verifyToken, async (req, res) => {
 
 app.post('/api/achievements', verifyToken, async (req, res) => {
   const { id, personId, commitId, title, evidence, cpqsdp, impactRating, date, fileAttachment } = req.body
+  // Convert ISO date to MySQL DATETIME
+  date = new Date(date)
+    .toISOString()
+    .slice(0, 19)
+    .replace("T", " ");
   try {
     await dbRun(
       `INSERT INTO achievements (id, personId, commitId, title, evidence, cpqsdp, impactRating, date, fileAttachment)
