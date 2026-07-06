@@ -81,18 +81,27 @@ app.get('/api/commits', verifyToken, async (req, res) => {
 })
 
 app.post('/api/commits', verifyToken, async (req, res) => {
-  const { id, personId, level, statement, createdAt } = req.body
+  let { id, personId, level, statement, createdAt } = req.body;
+
+  // Convert ISO date to MySQL DATETIME
+  createdAt = new Date(createdAt)
+    .toISOString()
+    .slice(0, 19)
+    .replace("T", " ");
+
   try {
     await dbRun(
-      `INSERT INTO commits (id, personId, level, statement, createdAt)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO commits
+      (id, personId, level, statement, createdAt)
+      VALUES (?, ?, ?, ?, ?)`,
       [id, personId, level, statement, createdAt]
-    )
-    res.json({ id })
+    );
+
+    res.json({ id });
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: err.message });
   }
-})
+});
 
 // Achievements
 app.get('/api/achievements', verifyToken, async (req, res) => {
