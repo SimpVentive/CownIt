@@ -1,4 +1,4 @@
-name: Deploy Web App
+name: Deploy React App
 
 on:
   push:
@@ -16,16 +16,17 @@ jobs:
         with:
           bun-version: latest
 
-      # Build web app
-      - name: Install Web Dependencies
-        working-directory: web
+      # Frontend .env
+      - name: Create Frontend .env
+        run: |
+          echo "EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" > .env
+      
+      - name: Install Frontend Dependencies
         run: bun install
 
-      - name: Build Web App
-        working-directory: web
-        run: bun run build
+      - name: Build Frontend
+        run: bun expo export --platform web
 
-      # Deploy to server
       - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -41,15 +42,25 @@ jobs:
 
             git pull origin main
 
-            # Build and deploy web app
-            cd web
-            bun install
-            bun run build
+            # ---------- Frontend ----------
+            echo "EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" > .env
 
-            # Restart server and reload apache
-            cd ..
+            bun install
+            bun expo export --platform web
+
+            # ---------- Backend ----------
             cd server
-            bun install
 
+            echo "BACKENDPORT=${{ secrets.BACKENDPORT }}" > .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+            echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+            echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+
+            bun install
+            
             sudo systemctl restart cownit-server
+            
             sudo systemctl reload apache2
