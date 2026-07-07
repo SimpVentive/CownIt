@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { createMessage } from '../../services/api';
 
 export default function Message({ state, onDataChange }) {
   const [recipientId, setRecipientId] = useState(
@@ -41,7 +42,7 @@ export default function Message({ state, onDataChange }) {
       date: new Date().toISOString(),
       read: false,
     };
-
+    createMessage(newMessage);
     onDataChange('messages', [...state.data.messages, newMessage]);
 
     setMessageBody('');

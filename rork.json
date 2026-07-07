@@ -7,9 +7,9 @@
       "framework": "kotlin"
     },
     {
-      "name": "CownIt iOS",
-      "path": "ios-cownit",
-      "framework": "swift"
+      "name": "CownIt Web",
+      "path": "web",
+      "framework": "web"
     }
   ]
 }

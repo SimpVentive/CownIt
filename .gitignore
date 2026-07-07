@@ -1,41 +1,39 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# React Native / Expo artifacts (should not exist in Kotlin projects)
 node_modules/
-
-# Expo
 .expo/
+.bundle/
+ios/
+babel.config.js
+metro.config.js
+package-lock.json
+tsconfig.json
+app.json
+
+# Gradle
+.gradle/
+build/
+local.properties
 dist/
-web-build/
-expo-env.d.ts
 
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# Android
+*.apk
+*.aab
+*.dex
+*.class
+*.log
+*.lock
+# IDE
+.idea/
+*.iml
+.vscode/
 
 # macOS
 .DS_Store
-*.pem
+*.swp
+*~
 
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
+# Rork
+.rork/
+.env
+rork-eslint.config.js
+app/src/main/java/**/Config.kt

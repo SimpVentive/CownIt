@@ -7,13 +7,16 @@ import {
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import {
-  people,
-  commits,
-  achievements,
-  monthlyUpdates,
-  messages,
-  hrComments,
-} from "./data/seed";
+  role,
+  login,
+  setToken,
+  fetchPeople,
+  fetchCommits,
+  fetchAchievements,
+  fetchMonthlyUpdates,
+  fetchMessages,
+  fetchHRComments,
+} from "./services/api";
 
 import TopBar from "./components/TopBar";
 import Sidebar from "./components/Sidebar";
@@ -23,58 +26,88 @@ import Login from "./pages/Login";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const { width } = useWindowDimensions();
 
   const isTablet = width >= 768;
   const [state, setState] = useState({
     activeRole: null,
+    loginRole: null,
     activePage: null,
     selectedPersonId: null,
     currentUserId: null,
 
     data: {
-      people,
-      commits,
-      achievements,
-      monthlyUpdates,
-      messages,
-      hrComments,
+      people: [],
+      commits: [],
+      achievements: [],
+      monthlyUpdates: [],
+      messages: [],
+      hrComments: [],
     },
   });
 
-  const handleLoginSuccess = (role, userId) => {
+  const handleLoginSuccess = async (email, password) => {
     const pageMap = {
       individual: "my-commits",
       hr: "people",
       ceo: "dashboard",
     };
 
-    setIsAuthenticated(true);
+    setLoginError("");
 
-    setState((prev) => ({
-      ...prev,
-      activeRole: role,
-      activePage: pageMap[role],
-      currentUserId: userId,
-    }));
+    try {
+      const data = await login(email, password);
+      const [people, commits, achievements, monthlyUpdates, messages, hrComments] = await Promise.all([
+        fetchPeople(),
+        fetchCommits(),
+        fetchAchievements(),
+        fetchMonthlyUpdates(),
+        fetchMessages(),
+        fetchHRComments(),
+      ]);
+
+      setState((prev) => ({
+        ...prev,
+        loginRole: data.user.role,
+        activeRole: data.user.role,
+        activePage: pageMap[data.user.role],
+        currentUserId: data.user.id,
+        data: {
+          people,
+          commits,
+          achievements,
+          monthlyUpdates,
+          messages,
+          hrComments,
+        },
+      }));
+      setIsAuthenticated(true);
+    } catch (err) {
+      setToken(null);
+      setIsAuthenticated(false);
+      setLoginError(err?.message || "Login failed")
+    }
   };
 
   const handleLogout = () => {
+    setToken(null);
     setIsAuthenticated(false);
 
     setState({
       activeRole: null,
+      loginRole: null,
       activePage: null,
       selectedPersonId: null,
       currentUserId: null,
 
       data: {
-        people,
-        commits,
-        achievements,
-        monthlyUpdates,
-        messages,
-        hrComments,
+        people: [],
+        commits: [],
+        achievements: [],
+        monthlyUpdates: [],
+        messages: [],
+        hrComments: [],
       },
     });
   };
@@ -105,6 +138,7 @@ export default function App() {
     setState((prev) => ({
       ...prev,
       selectedPersonId: personId,
+      activePage: "drilldown",
     }));
   };
 
@@ -122,6 +156,7 @@ export default function App() {
     return (
       <Login
         onLoginSuccess={handleLoginSuccess}
+        errorMessage={loginError}
       />
     );
   }
@@ -135,6 +170,7 @@ export default function App() {
       <View style={styles.container}>
         <TopBar
           activeRole={state.activeRole}
+          loginRole={state.loginRole}
           onRoleChange={handleRoleChange}
           currentUser={currentUser}
           onLogout={handleLogout}

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
+import { createMessage } from "../../services/api";
 
 function Reminders({ state, onDataChange }) {
   const [sentIds, setSentIds] = useState([]);
@@ -51,7 +52,7 @@ function Reminders({ state, onDataChange }) {
       date: new Date().toISOString(),
       read: false,
     };
-
+    createMessage(msg);
     onDataChange("messages", [...state.data.messages, msg]);
     setSentIds([...sentIds, personId]);
   };
@@ -69,7 +70,7 @@ function Reminders({ state, onDataChange }) {
         date: new Date().toISOString(),
         read: false,
       }));
-
+    msgs.forEach((msg) => createMessage(msg));
     onDataChange("messages", [...state.data.messages, ...msgs]);
     setSentIds(overduePeople.map((p) => p.id));
   };

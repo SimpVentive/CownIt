@@ -1,10 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   ScrollView,
+  TextInput,
+  Pressable,
   StyleSheet,
+  Alert,
 } from "react-native";
+import uuid from "react-native-uuid";
+import { createCommit } from "../../services/api";
 
 const COMMIT_STYLES = {
   self: { bg: "#EEEDFE", text: "#3C3489" },
@@ -19,13 +24,118 @@ const COMMIT_LABELS = {
 };
 
 export default function MyCommits({ state }) {
+  const [statement, setStatement] = useState("");
+  const [level, setLevel] = useState("self");
+  const [saving, setSaving] = useState(false);
+
   const userCommits = state.data.commits.filter(
     (c) => c.personId === state.currentUserId
   );
 
+  const addCommit = async () => {
+    if (!statement.trim()) {
+      Alert.alert("Validation", "Please enter a commitment.");
+      return;
+    }
+
+    const levelCount = userCommits.filter(
+      (c) => c.level === level
+    ).length;
+
+    if (levelCount >= 3) {
+      console.error("Maximum 3 commitments are allowed for this level.");
+      Alert.alert(
+        "Limit Reached",
+        "Maximum 3 commitments are allowed for this level."
+      );
+      return;
+    }
+
+    const commit = {
+      id: uuid.v4().toString(),
+      personId: state.currentUserId,
+      level,
+      statement,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      setSaving(true);
+      const result = await createCommit(commit);
+      /*const response = await fetch(
+        "https://cownit.l-kurve.com/api/commits",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Uncomment if using JWT
+            // Authorization: `Bearer ${state.token}`,
+          },
+          body: JSON.stringify(commit),
+        }
+      );*/
+
+      //const result = await response.json();
+
+      // Update local list
+      state.data.commits.push(commit);
+
+      setStatement("");
+
+      Alert.alert("Success", "Commitment added successfully.");
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.heading}>My Commitments</Text>
+
+      <View style={styles.addBox}>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your commitment..."
+          value={statement}
+          onChangeText={setStatement}
+          multiline
+        />
+
+        <View style={styles.levelContainer}>
+          {Object.entries(COMMIT_LABELS).map(([key, label]) => (
+            <Pressable
+              key={key}
+              onPress={() => setLevel(key)}
+              style={[
+                styles.levelButton,
+                level === key && styles.selectedLevel,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.levelButtonText,
+                  level === key && styles.selectedLevelText,
+                ]}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Pressable
+          style={styles.saveButton}
+          onPress={addCommit}
+          disabled={saving}
+        >
+          <Text style={styles.saveButtonText}>
+            {saving ? "Saving..." : "Add Commitment"}
+          </Text>
+        </Pressable>
+      </View>
 
       {Object.entries(COMMIT_LABELS).map(([key, label]) => {
         const levelCommits = userCommits.filter(
@@ -102,6 +212,63 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     marginBottom: 20,
+  },
+
+  addBox: {
+    marginBottom: 25,
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 80,
+    marginBottom: 15,
+    textAlignVertical: "top",
+  },
+
+  levelContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
+  },
+
+  levelButton: {
+    flex: 1,
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: "#3C3489",
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+
+  selectedLevel: {
+    backgroundColor: "#3C3489",
+  },
+
+  levelButtonText: {
+    color: "#3C3489",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+
+  selectedLevelText: {
+    color: "#fff",
+  },
+
+  saveButton: {
+    backgroundColor: "#3C3489",
+    borderRadius: 8,
+    padding: 14,
+    alignItems: "center",
+  },
+
+  saveButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 15,
   },
 
   section: {

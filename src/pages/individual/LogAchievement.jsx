@@ -10,6 +10,8 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
+import { createAchievement } from '../../services/api';
+
 
 const CPQSDP_DIMS = [
   { key: 'C', label: 'Cost', color: '#534AB7' },
@@ -72,6 +74,8 @@ function LogAchievement({ state, onDataChange }) {
       date: new Date().toISOString(),
       fileAttachment: file ? file.name : null
     };
+
+    createAchievement(newAchievement);
 
     onDataChange('achievements', [...state.data.achievements, newAchievement]);
 

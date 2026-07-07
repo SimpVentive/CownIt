@@ -8,15 +8,26 @@ import {
 
 export default function TopBar({
   activeRole,
+  loginRole,
   onRoleChange,
   currentUser,
   onLogout,
 }) {
-  const roles = [
+  const allRoles = [
     { value: "individual", label: "Individual" },
     { value: "hr", label: "HR" },
     { value: "ceo", label: "CEO" },
   ];
+
+  const roles = allRoles.filter((role) => {
+    if (loginRole === "individual") {
+      return role.value === "individual";
+    }
+    if (loginRole === "hr") {
+      return role.value === "individual" || role.value === "hr";
+    }
+    return true;
+  });
 
   return (
     <View style={styles.container}>

@@ -40,7 +40,7 @@ jobs:
 
             cd /var/www/cownit.l-kurve.com/CownIt
 
-            git pull origin master
+            git pull origin main
 
             # ---------- Frontend ----------
             echo "EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" > .env
@@ -53,6 +53,11 @@ jobs:
 
             echo "BACKENDPORT=${{ secrets.BACKENDPORT }}" > .env
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+            echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+            echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
 
             bun install
             
