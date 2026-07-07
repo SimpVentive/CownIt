@@ -60,6 +60,10 @@ export async function initDb() {
       CREATE TABLE IF NOT EXISTS people (
         id VARCHAR(255) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        mobile VARCHAR(25) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        role ENUM('individual','hr','ceo') NOT NULL,
         initials VARCHAR(10) NOT NULL,
         department VARCHAR(255) NOT NULL,
         avatarColor VARCHAR(50) NOT NULL,

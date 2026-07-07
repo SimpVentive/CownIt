@@ -10,10 +10,12 @@ import bcrypt from 'bcrypt';
 
 // Hardcoded seed data (TypeScript seed.ts can't be imported directly)
 const seedPeople = [
-  { id: 'p1', name: 'Arjun Mehta', initials: 'AM', department: 'Operations', avatarColor: '#EEEDFE', avatarTextColor: '#3C3489' },
-  { id: 'p2', name: 'Priya Sharma', initials: 'PS', department: 'Quality', avatarColor: '#E1F5EE', avatarTextColor: '#085041' },
-  { id: 'p3', name: 'Rohan Das', initials: 'RD', department: 'Safety', avatarColor: '#FAEEDA', avatarTextColor: '#633806' },
-  { id: 'p4', name: 'Meena Iyer', initials: 'MI', department: 'HR', avatarColor: '#FAECE7', avatarTextColor: '#993C1D' }
+  { id: 'p1', name: 'Arjun Mehta', initials: 'AM', department: 'Operations', email: 'arjunmehta@demo.com', mobile: '9876543210', role: 'individual', password: '$2b$10$wQVah8D6VrfvrSFbh0VKNuoIprtehJiTnIVurB9Vrv1ukKIVkk9QO', avatarColor: '#EEEDFE', avatarTextColor: '#3C3489' },
+  { id: 'p2', name: 'Priya Sharma', initials: 'PS', department: 'Quality', email: 'priyasharma@demo.com', mobile: '9876543211', role: 'individual', password: '$2b$10$wQVah8D6VrfvrSFbh0VKNuoIprtehJiTnIVurB9Vrv1ukKIVkk9QO', avatarColor: '#E1F5EE', avatarTextColor: '#085041' },
+  { id: 'p3', name: 'Rohan Das', initials: 'RD', department: 'Safety', email: 'roha.das@demo.com', mobile: '9876543212', role: 'individual', password: '$2b$10$wQVah8D6VrfvrSFbh0VKNuoIprtehJiTnIVurB9Vrv1ukKIVkk9QO', avatarColor: '#FAEEDA', avatarTextColor: '#633806' },
+  { id: 'p4', name: 'Meena Iyer', initials: 'MI', department: 'HR', email: 'meenaiyer@demo.com', mobile: '9876543213', role: 'individual', password: '$2b$10$wQVah8D6VrfvrSFbh0VKNuoIprtehJiTnIVurB9Vrv1ukKIVkk9QO', avatarColor: '#FAECE7', avatarTextColor: '#993C1D' },
+  { id: 'hr-user', name: 'HR Manager', initials: 'HR', department: 'HR', email: 'hrmanager@demo.com', mobile: '9876543214', role: 'hr', password: '$2b$10$wQVah8D6VrfvrSFbh0VKNuoIprtehJiTnIVurB9Vrv1ukKIVkk9QO', avatarColor: '#FAECE7', avatarTextColor: '#993C1D' },
+  { id: 'ceo-user', name: 'CEO', initials: 'CEO', department: 'CEO', email: 'ceo@demo.com', mobile: '9876543215', role: 'ceo', password: '$2b$10$wQVah8D6VrfvrSFbh0VKNuoIprtehJiTnIVurB9Vrv1ukKIVkk9QO', avatarColor: '#FAECE7', avatarTextColor: '#993C1D' }
 ]
 
 const app = express()
@@ -34,9 +36,9 @@ async function seedDatabase() {
       console.log('Seeding database...')
       for (const person of seedPeople) {
         await dbRun(
-          `INSERT INTO people (id, name, initials, department, avatarColor, avatarTextColor)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [person.id, person.name, person.initials, person.department, person.avatarColor, person.avatarTextColor]
+          `INSERT INTO people (id, name, initials, department, email, mobile, role, password, avatarColor, avatarTextColor)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [person.id, person.name, person.initials, person.department, person.email, person.mobile, person.role, person.password, person.avatarColor, person.avatarTextColor]
         )
       }
       console.log('Database seeded successfully')
