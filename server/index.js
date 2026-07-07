@@ -6,6 +6,8 @@ import cors from 'cors'
 import { initDb, dbRun, dbGet, dbAll } from './db.js'
 import { verifyToken, generateToken } from './middleware/auth.js'
 
+import bcrypt from 'bcrypt';
+
 // Hardcoded seed data (TypeScript seed.ts can't be imported directly)
 const seedPeople = [
   { id: 'p1', name: 'Arjun Mehta', initials: 'AM', department: 'Operations', avatarColor: '#EEEDFE', avatarTextColor: '#3C3489' },
@@ -49,7 +51,7 @@ await seedDatabase()
 // Routes
 
 // Auth
-app.post('/api/auth/login', async (req, res) => {
+/*app.post('/api/auth/login', async (req, res) => {
   const { userId, role } = req.body
 
   if (!userId || !role) {
@@ -58,12 +60,75 @@ app.post('/api/auth/login', async (req, res) => {
 
   const token = generateToken(userId, role)
   res.json({ token, userId, role })
-})
+})*/
+// or
+// const bcrypt = require('bcrypt');
+
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({
+      error: 'Email and password are required'
+    });
+  }
+
+  try {
+    const user = await dbGet(
+      `SELECT id, name, email, password, role
+       FROM people
+       WHERE email = ?`,
+      [email]
+    );
+
+    if (!user) {
+      return res.status(401).json({
+        error: 'Invalid email or password'
+      });
+    }
+
+    // Compare entered password with bcrypt hash
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({
+        error: 'Invalid email or password'
+      });
+    }
+
+    const token = generateToken(user.id, user.role);
+
+    /*res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });*/
+    //res.json({ token, userId: user.id, role: user.role })
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
 
 // People
 app.get('/api/people', verifyToken, async (req, res) => {
   try {
-    const people = await dbAll('SELECT * FROM people')
+    const people = await dbAll('SELECT * FROM people WHERE role != "ceo" and role != "hr" ORDER BY name ASC')
     res.json(people)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -73,8 +138,15 @@ app.get('/api/people', verifyToken, async (req, res) => {
 // Commits
 app.get('/api/commits', verifyToken, async (req, res) => {
   try {
-    const commits = await dbAll('SELECT * FROM commits ORDER BY createdAt DESC')
-    res.json(commits)
+    if(req.user.role==='ceo'){
+      const commits = await dbAll('SELECT * FROM commits ORDER BY createdAt DESC')
+      res.json(commits)
+    }
+    else{
+      const commits = await dbAll('SELECT * FROM commits WHERE personId = ? ORDER BY createdAt DESC', [req.user.userId])
+      res.json(commits)
+    }    
+    
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -82,7 +154,6 @@ app.get('/api/commits', verifyToken, async (req, res) => {
 
 app.post('/api/commits', verifyToken, async (req, res) => {
   let { id, personId, level, statement, createdAt } = req.body;
-
   // Convert ISO date to MySQL DATETIME
   createdAt = new Date(createdAt)
     .toISOString()
@@ -106,20 +177,29 @@ app.post('/api/commits', verifyToken, async (req, res) => {
 // Achievements
 app.get('/api/achievements', verifyToken, async (req, res) => {
   try {
-    const achievements = await dbAll('SELECT * FROM achievements ORDER BY date DESC')
-    const parsedAchievements = achievements.map(a => ({
-      ...a,
-      cpqsdp: JSON.parse(a.cpqsdp)
-    }))
-    res.json(parsedAchievements)
+    if(req.user.role === 'ceo') {
+      const achievements = await dbAll('SELECT * FROM achievements ORDER BY date DESC')
+      const parsedAchievements = achievements.map(a => ({
+        ...a,
+        cpqsdp: JSON.parse(a.cpqsdp)
+      }))
+      res.json(parsedAchievements)
+    }
+    else{
+      const achievements = await dbAll('SELECT * FROM achievements WHERE personId = ? ORDER BY date DESC', [req.user.userId])
+      const parsedAchievements = achievements.map(a => ({
+        ...a,
+        cpqsdp: JSON.parse(a.cpqsdp)
+      }))
+      res.json(parsedAchievements)
+    }
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
 app.post('/api/achievements', verifyToken, async (req, res) => {
-  const { id, personId, commitId, title, evidence, cpqsdp, impactRating, date, fileAttachment } = req.body
-  
+  const { id, personId, commitId, title, evidence, cpqsdp, impactRating, date, fileAttachment } = req.body;  
   const parsedDate = new Date(date);
 
   if (isNaN(parsedDate.getTime())) {
@@ -146,7 +226,7 @@ app.post('/api/achievements', verifyToken, async (req, res) => {
 // Monthly Updates
 app.get('/api/monthlyUpdates', verifyToken, async (req, res) => {
   try {
-    const updates = await dbAll('SELECT * FROM monthlyUpdates ORDER BY updatedAt DESC')
+    const updates = await dbAll('SELECT * FROM monthlyUpdates WHERE personId = ? ORDER BY updatedAt DESC', [req.user.userId])
     res.json(updates)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -179,8 +259,8 @@ app.post('/api/monthlyUpdates', verifyToken, async (req, res) => {
 
 // Messages
 app.get('/api/messages', verifyToken, async (req, res) => {
-  try {
-    const messages = await dbAll('SELECT id, fromRole, fromName, toPersonId, body, date, isRead as `read`, created_at FROM messages ORDER BY date DESC')
+  try {    
+    const messages = await dbAll('SELECT id, fromRole, fromName, toPersonId, body, date, isRead as `read`, created_at FROM messages WHERE toPersonId = ? ORDER BY date DESC', [req.user.userId])
     res.json(messages)
   } catch (err) {
     res.status(500).json({ error: err.message })

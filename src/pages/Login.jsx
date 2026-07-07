@@ -5,40 +5,22 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  SafeAreaView,
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Picker } from "@react-native-picker/picker";
+import { API_URL } from "../services/api";
 
-const USERS = {
-  individual: [
-    { id: "p1", name: "John Smith", password: "password" },
-    { id: "p2", name: "Sarah Johnson", password: "password" },
-    { id: "p3", name: "Mike Chen", password: "password" },
-    { id: "p4", name: "Lisa Davis", password: "password" },
-  ],
-  hr: [{ id: "hr-user", name: "HR Manager", password: "password" }],
-  ceo: [{ id: "ceo-user", name: "CEO", password: "password" }],
-};
 
-export default function Login({ onLoginSuccess, errorMessage }) {
-  const [selectedRole, setSelectedRole] = useState("");
-  const [selectedUser, setSelectedUser] = useState("");
+export default function Login({ onLoginSuccess }) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const currentUsers = selectedRole ? USERS[selectedRole] : [];
-
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError("");
 
-    if (!selectedRole) {
-      setError("Select a role");
-      return;
-    }
-
-    if (!selectedUser) {
-      setError("Select a user");
+    if (!email.trim()) {
+      setError("Enter email");
       return;
     }
 
@@ -47,17 +29,23 @@ export default function Login({ onLoginSuccess, errorMessage }) {
       return;
     }
 
-    const user = USERS[selectedRole].find(
-      (u) => u.id === selectedUser
-    );
+    try {
+      setLoading(true);      
 
-    if (!user || user.password !== password) {
-      setError("Invalid password");
-      return;
-    }
+      // data.user = { id, name, email, role }
+      // data.token = JWT token
 
-    if (onLoginSuccess) {
-      onLoginSuccess(selectedRole, selectedUser, user.name);
+      if (onLoginSuccess) {
+        onLoginSuccess(
+          email,
+          password
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Unable to connect to server");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,122 +58,47 @@ export default function Login({ onLoginSuccess, errorMessage }) {
           Commit & Own It
         </Text>
 
-        <Text style={styles.label}>Select Role</Text>
+        <Text style={styles.label}>Email</Text>
 
-        <View style={styles.roleRow}>
-          {["individual", "hr", "ceo"].map((role) => (
-            <Pressable
-              key={role}
-              style={[
-                styles.roleButton,
-                selectedRole === role &&
-                  styles.roleButtonActive,
-              ]}
-              onPress={() => {
-                setSelectedRole(role);
-                setSelectedUser("");
-                setPassword("");
-                setError("");
-              }}
-            >
-              <Text
-                style={[
-                  styles.roleText,
-                  selectedRole === role &&
-                    styles.roleTextActive,
-                ]}
-              >
-                {role === "individual"
-                  ? "Individual"
-                  : role.toUpperCase()}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter email"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={email}
+          onChangeText={setEmail}
+        />
 
-        {selectedRole ? (
-          <>
-            <Text style={styles.label}>
-              Select User
-            </Text>
+        <Text style={styles.label}>Password</Text>
 
-            <View style={styles.pickerBox}>
-              <Picker
-                selectedValue={selectedUser}
-                onValueChange={(value) =>
-                  setSelectedUser(value)
-                }
-              >
-                <Picker.Item
-                  label="Choose User..."
-                  value=""
-                />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
 
-                {currentUsers.map((user) => (
-                  <Picker.Item
-                    key={user.id}
-                    label={user.name}
-                    value={user.id}
-                  />
-                ))}
-              </Picker>
-            </View>
-          </>
-        ) : null}
-
-        {selectedUser ? (
-          <>
-            <Text style={styles.label}>
-              Password
-            </Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Enter password"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-          </>
-        ) : null}
-
-        {(error || errorMessage) ? (
+        {!!error && (
           <View style={styles.errorBox}>
-            <Text style={styles.errorText}>
-              {error || errorMessage}
-            </Text>
+            <Text style={styles.errorText}>{error}</Text>
           </View>
-        ) : null}
+        )}
 
         <Pressable
           style={[
             styles.loginButton,
-            (!selectedRole ||
-              !selectedUser ||
-              !password) &&
+            (!email || !password || loading) &&
               styles.loginButtonDisabled,
           ]}
-          disabled={
-            !selectedRole ||
-            !selectedUser ||
-            !password
-          }
+          disabled={!email || !password || loading}
           onPress={handleLogin}
         >
           <Text style={styles.loginText}>
-            Login
+            {loading ? "Signing In..." : "Login"}
           </Text>
         </Pressable>
-
-        <View style={styles.helpBox}>
-          <Text style={{ fontWeight: "bold" }}>
-            Demo Credentials
-          </Text>
-
-          <Text style={{ marginTop: 8 }}>
-            Password: password
-          </Text>
-        </View>
       </View>
     </SafeAreaProvider>
   );
@@ -225,39 +138,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 
-  roleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  roleButton: {
-    flex: 1,
-    marginHorizontal: 4,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#eee",
-    alignItems: "center",
-  },
-
-  roleButtonActive: {
-    backgroundColor: "#000",
-  },
-
-  roleText: {
-    color: "#000",
-  },
-
-  roleTextActive: {
-    color: "#fff",
-  },
-
-  pickerBox: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
@@ -270,7 +150,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fdecea",
     padding: 12,
     borderRadius: 8,
-    marginTop: 12,
+    marginTop: 15,
   },
 
   errorText: {
@@ -293,12 +173,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
-  },
-
-  helpBox: {
-    marginTop: 20,
-    backgroundColor: "#f5f5f5",
-    padding: 15,
-    borderRadius: 8,
   },
 });

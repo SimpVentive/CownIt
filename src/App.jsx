@@ -7,6 +7,7 @@ import {
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import {
+  role,
   login,
   setToken,
   fetchPeople,
@@ -46,7 +47,7 @@ export default function App() {
     },
   });
 
-  const handleLoginSuccess = async (role, userId) => {
+  const handleLoginSuccess = async (email, password) => {
     const pageMap = {
       individual: "my-commits",
       hr: "people",
@@ -56,7 +57,7 @@ export default function App() {
     setLoginError("");
 
     try {
-      await login(userId, role);
+      const data = await login(email, password);
       const [people, commits, achievements, monthlyUpdates, messages, hrComments] = await Promise.all([
         fetchPeople(),
         fetchCommits(),
@@ -68,10 +69,10 @@ export default function App() {
 
       setState((prev) => ({
         ...prev,
-        loginRole: role,
-        activeRole: role,
-        activePage: pageMap[role],
-        currentUserId: userId,
+        loginRole: data.user.role,
+        activeRole: data.user.role,
+        activePage: pageMap[data.user.role],
+        currentUserId: data.user.id,
         data: {
           people,
           commits,

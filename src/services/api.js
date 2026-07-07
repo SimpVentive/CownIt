@@ -1,8 +1,13 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:6001/api'
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:6001/api'
 let token = null
+let role = null
 
 export const setToken = (newToken) => {
   token = newToken
+}
+
+export const setRole = (newRole) => {
+  role = newRole
 }
 
 const getHeaders = () => {
@@ -13,14 +18,16 @@ const getHeaders = () => {
   return headers
 }
 
-export const login = async (userId, role) => {
+export const login = async (email, password) => {
   const res = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, role })
+    body: JSON.stringify({ email, password })
   })
   const data = await res.json()
+
   if (!res.ok) throw new Error(data.error || 'Login failed')
+  setRole(data.user.role)
   setToken(data.token)
   return data
 }
