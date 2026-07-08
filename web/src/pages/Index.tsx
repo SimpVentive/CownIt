@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { AppData, Role, Session } from "@/lib/types";
 import { initialData } from "@/lib/seed";
+import * as api from "@/lib/api";
 import Login from "./Login";
 import TopBar from "@/components/TopBar";
 import Sidebar from "@/components/Sidebar";
@@ -35,6 +36,36 @@ function Index() {
     setSelectedPersonId(null);
   };
 
+  // Load data from API after login
+  useEffect(() => {
+    if (!session) return;
+
+    const loadData = async () => {
+      try {
+        const [people, commits, achievements, messages, hrComments] = await Promise.all([
+          api.getPeople(),
+          api.getCommits(),
+          api.getAchievements(),
+          api.getMessages(),
+          api.getHrComments(),
+        ]);
+
+        setData({
+          people,
+          commits,
+          achievements,
+          messages,
+          hrComments,
+        });
+      } catch (err) {
+        console.error('Failed to load data:', err);
+        // Fall back to mock data on error
+      }
+    };
+
+    loadData();
+  }, [session]);
+
   const handleLogout = () => {
     setSession(null);
     setActivePage("");
@@ -56,6 +87,41 @@ function Index() {
 
   const handleDataChange = <K extends keyof AppData>(entity: K, newArray: AppData[K]) => {
     setData((prev) => ({ ...prev, [entity]: newArray }));
+
+    // Save to API
+    if (entity === "commits") {
+      const oldArray = data.commits;
+      const newItems = (newArray as any[]).filter(
+        (item) => !oldArray.some((old) => old.id === item.id)
+      );
+      newItems.forEach((item) => {
+        api.createCommit(item).catch((err) => console.error('Failed to save commit:', err));
+      });
+    } else if (entity === "achievements") {
+      const oldArray = data.achievements;
+      const newItems = (newArray as any[]).filter(
+        (item) => !oldArray.some((old) => old.id === item.id)
+      );
+      newItems.forEach((item) => {
+        api.createAchievement(item).catch((err) => console.error('Failed to save achievement:', err));
+      });
+    } else if (entity === "messages") {
+      const oldArray = data.messages;
+      const newItems = (newArray as any[]).filter(
+        (item) => !oldArray.some((old) => old.id === item.id)
+      );
+      newItems.forEach((item) => {
+        api.createMessage(item).catch((err) => console.error('Failed to save message:', err));
+      });
+    } else if (entity === "hrComments") {
+      const oldArray = data.hrComments;
+      const newItems = (newArray as any[]).filter(
+        (item) => !oldArray.some((old) => old.id === item.id)
+      );
+      newItems.forEach((item) => {
+        api.createHrComment(item).catch((err) => console.error('Failed to save HR comment:', err));
+      });
+    }
   };
 
   if (!session) {

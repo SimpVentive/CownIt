@@ -11,7 +11,7 @@ import {
   Check,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
-import { demoUsers } from "@/lib/seed";
+import { login as apiLogin } from "@/lib/api";
 
 const NAVY = "#0B1F3A";
 const GREEN = "#2E7D32";
@@ -27,17 +27,17 @@ const ROLES: { value: Role; label: string; icon: typeof User }[] = [
 ];
 
 function Login({ onLoginSuccess }: LoginProps) {
-  const [selectedRole, setSelectedRole] = useState<Role>("individual");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [passwordVisible, setPasswordVisible] = useState<boolean>(false);
   const [twoFaEnabled, setTwoFaEnabled] = useState<boolean>(true);
   const [rememberMe, setRememberMe] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const canSubmit = email.length > 0 && password.length > 0;
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError("");
     if (!email) {
       setError("Enter email address");
@@ -47,16 +47,17 @@ function Login({ onLoginSuccess }: LoginProps) {
       setError("Enter password");
       return;
     }
-    if (password !== "password") {
-      setError("Invalid password");
-      return;
+
+    setIsLoading(true);
+    try {
+      const response = await apiLogin(email, password);
+      const user = response.user;
+      onLoginSuccess(user.role as Role, user.id, user.name);
+    } catch (err) {
+      setError((err as Error).message || "Login failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    const user = demoUsers[selectedRole][0];
-    if (!user) {
-      setError("No demo user for this role");
-      return;
-    }
-    onLoginSuccess(selectedRole, user.id, user.name);
   };
 
   return (
@@ -102,48 +103,7 @@ function Login({ onLoginSuccess }: LoginProps) {
 
         {/* Card */}
         <div className="w-full max-w-md rounded-xl border border-[#e0e0e0] bg-white p-6 shadow-sm">
-          <div className="mb-4 text-center text-base font-medium text-black">Login as</div>
-
-          {/* Role cards */}
-          <div className="mb-5 grid grid-cols-3 gap-3">
-            {ROLES.map((role) => {
-              const Icon = role.icon;
-              const selected = selectedRole === role.value;
-              return (
-                <button
-                  key={role.value}
-                  type="button"
-                  onClick={() => {
-                    setSelectedRole(role.value);
-                    setError("");
-                  }}
-                  className="flex flex-col items-center rounded-lg border py-3.5 transition-colors"
-                  style={{
-                    borderColor: selected ? GREEN : "#e0e0e0",
-                    backgroundColor: selected ? "#E8F5E9" : "#fff",
-                  }}
-                >
-                  <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#f5f5f5]">
-                    <Icon size={22} style={{ color: NAVY }} strokeWidth={1.75} />
-                    {selected && (
-                      <span
-                        className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white"
-                        style={{ backgroundColor: GREEN }}
-                      >
-                        <Check size={10} className="text-white" strokeWidth={3} />
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    className="mt-2 text-[13px] font-medium"
-                    style={{ color: selected ? GREEN : "#000" }}
-                  >
-                    {role.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <div className="mb-6 text-center text-base font-medium text-black">Login to CownIt</div>
 
           {/* Email */}
           <div className="mb-3.5 flex items-center gap-3 rounded-lg border border-[#e0e0e0] px-3 focus-within:border-[#999]">
@@ -236,11 +196,11 @@ function Login({ onLoginSuccess }: LoginProps) {
           <button
             type="button"
             onClick={handleLogin}
-            disabled={!canSubmit}
+            disabled={!canSubmit || isLoading}
             className="h-12 w-full rounded-lg text-sm font-medium text-white transition-opacity disabled:cursor-not-allowed"
-            style={{ backgroundColor: canSubmit ? NAVY : "#e0e0e0" }}
+            style={{ backgroundColor: canSubmit && !isLoading ? NAVY : "#e0e0e0" }}
           >
-            Login
+            {isLoading ? "Logging in..." : "Login"}
           </button>
         </div>
 
