@@ -88,7 +88,7 @@ function MyImpact({ data, currentUserId }: MyImpactProps) {
                     {comments.map((comment) => (
                       <div
                         key={comment.id}
-                        className="mb-2 rounded-lg border-l-2 border-l-[#007bff] bg-[#f9f9f9] p-3"
+                        className="mb-2 rounded-lg bg-[#f9f9f9] p-3"
                       >
                         <div className="mb-1 text-xs font-medium text-[#007bff]">HR comment</div>
                         <div className="mb-1 text-xs text-[#666]">{comment.body}</div>
