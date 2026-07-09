@@ -60,18 +60,18 @@ export function computeHealthScore(personId: string, data: AppData): number {
   return Math.round(score);
 }
 
-export const COMMIT_LEVELS: CommitLevel[] = ["self", "team", "org"];
+export const COMMIT_LEVELS: CommitLevel[] = ["individual", "hr", "ceo"];
 
 export const COMMIT_LABELS: Record<CommitLevel, string> = {
-  self: "Self",
-  team: "Team / Dept",
-  org: "Organisation",
+  individual: "Self",
+  hr: "Team / Dept",
+  ceo: "Organisation",
 };
 
 export const COMMIT_STYLES: Record<CommitLevel, { bg: string; text: string }> = {
-  self: { bg: "#EEEDFE", text: "#3C3489" },
-  team: { bg: "#E1F5EE", text: "#085041" },
-  org: { bg: "#FAEEDA", text: "#633806" },
+  individual: { bg: "#EEEDFE", text: "#3C3489" },
+  hr: { bg: "#E1F5EE", text: "#085041" },
+  ceo: { bg: "#FAEEDA", text: "#633806" },
 };
 
 export const CPQSDP_DIMS: { key: Dim; label: string; color: string }[] = [

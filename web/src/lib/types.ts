@@ -1,6 +1,6 @@
 export type Role = "individual" | "hr" | "ceo";
 
-export type CommitLevel = "self" | "team" | "org";
+export type CommitLevel = "individual" | "hr" | "ceo";
 
 export type Dim = "C" | "P" | "Q" | "S" | "D" | "O";
 
