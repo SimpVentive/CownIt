@@ -16,7 +16,10 @@ interface LevelConfig {
 }
 
 function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
+  console.log(data);
+  console.log(currentUserId);
   const userCommits = data.commits.filter((c) => c.personId === currentUserId);
+  console.log(userCommits);
   const [addingLevel, setAddingLevel] = useState<CommitLevel | null>(null);
   const [input, setInput] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);

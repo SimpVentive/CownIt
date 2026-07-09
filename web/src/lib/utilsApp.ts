@@ -26,41 +26,52 @@ export function formatDateShort(isoString: string | null | undefined): string {
  */
 export function computeHealthScore(personId: string, data: AppData): number {
   let score = 0;
+
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
-  const personCommits = data.commits.filter((c) => c.personId === personId);
-  const filledLevels = new Set(personCommits.map((c) => c.level));
+  const commits = data.commits ?? [];
+  const monthlyUpdates = data.monthlyUpdates ?? [];
+  const achievements = data.achievements ?? [];
+
+  const personCommits = commits.filter(c => c.personId === personId);
+  const filledLevels = new Set(personCommits.map(c => c.level));
+
   score += (filledLevels.size / 3) * 40;
 
-  const hasUpdate = data.monthlyUpdates.some(
-    (u) => u.personId === personId && u.month === currentMonth && u.year === currentYear
+  const hasUpdate = monthlyUpdates.some(
+    u =>
+      u.personId === personId &&
+      u.month === currentMonth &&
+      u.year === currentYear
   );
+
   if (hasUpdate) score += 40;
 
-  const hasAchievement = data.achievements.some(
-    (a) =>
+  const hasAchievement = achievements.some(
+    a =>
       a.personId === personId &&
       new Date(a.date).getMonth() + 1 === currentMonth &&
       new Date(a.date).getFullYear() === currentYear
   );
+
   if (hasAchievement) score += 20;
 
   return Math.round(score);
 }
 
-export const COMMIT_LEVELS: CommitLevel[] = ["self", "team", "org"];
+export const COMMIT_LEVELS: CommitLevel[] = ["individual", "hr", "ceo"];
 
 export const COMMIT_LABELS: Record<CommitLevel, string> = {
-  self: "Self",
-  team: "Team / Dept",
-  org: "Organisation",
+  individual: "Self",
+  hr: "Team / Dept",
+  ceo: "Organisation",
 };
 
 export const COMMIT_STYLES: Record<CommitLevel, { bg: string; text: string }> = {
-  self: { bg: "#EEEDFE", text: "#3C3489" },
-  team: { bg: "#E1F5EE", text: "#085041" },
-  org: { bg: "#FAEEDA", text: "#633806" },
+  individual: { bg: "#EEEDFE", text: "#3C3489" },
+  hr: { bg: "#E1F5EE", text: "#085041" },
+  ceo: { bg: "#FAEEDA", text: "#633806" },
 };
 
 export const CPQSDP_DIMS: { key: Dim; label: string; color: string }[] = [
