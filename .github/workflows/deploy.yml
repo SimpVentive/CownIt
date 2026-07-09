@@ -1,22 +1,28 @@
-name: Deploy React App
+name: Deploy CownIt
 
 on:
   push:
     branches:
       - main
 
+concurrency:
+  group: production
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      # Frontend .env
+      # Build locally to ensure code compiles before deployment
       - name: Create Frontend .env
         working-directory: web
         run: |
@@ -24,47 +30,70 @@ jobs:
 
       - name: Install Frontend Dependencies
         working-directory: web
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Build Frontend
         working-directory: web
         run: bun run build
 
-      - name: Deploy
+      - name: Deploy to Server
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
+          script_stop: true
           script: |
             export BUN_INSTALL="$HOME/.bun"
             export PATH="$BUN_INSTALL/bin:$PATH"
 
             cd /var/www/cownit.l-kurve.com/CownIt
 
-            git pull origin main
+            echo "Pulling latest code..."
+            git fetch origin
+            git reset --hard origin/main
 
-            # ---------- Frontend ----------
+            #############################
+            ## Frontend
+            #############################
+
             cd web
-            echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" > .env
-            bun install
+
+            cat > .env <<EOF
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            EOF
+
+            bun install --frozen-lockfile
             bun run build
+
             cd ..
 
-            # ---------- Backend ----------
+            #############################
+            ## Backend
+            #############################
+
             cd server
 
-            echo "BACKENDPORT=${{ secrets.BACKENDPORT }}" > .env
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-            echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-            echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-            echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+            cat > .env <<EOF
+            BACKENDPORT=${{ secrets.BACKENDPORT }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            EOF
 
-            bun install
-            
+            bun install --frozen-lockfile
+
             sudo systemctl restart cownit-server
-            
+
+            echo "Waiting for server..."
+            sleep 5
+
+            sudo systemctl status cownit-server --no-pager
+
             sudo systemctl reload apache2
+
+            echo "Deployment completed successfully."
