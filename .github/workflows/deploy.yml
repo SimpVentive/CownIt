@@ -20,7 +20,7 @@ jobs:
       - name: Create Frontend .env
         working-directory: web
         run: |
-          echo "VITE_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" > .env
+          echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" > .env
 
       - name: Install Frontend Dependencies
         working-directory: web
@@ -47,7 +47,7 @@ jobs:
 
             # ---------- Frontend ----------
             cd web
-            echo "VITE_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" > .env
+            echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" > .env
             bun install
             bun run build
             cd ..
