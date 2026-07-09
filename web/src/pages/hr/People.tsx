@@ -1,5 +1,6 @@
+import { useState } from "react";
 import type { AppData } from "@/lib/types";
-import { computeHealthScore, formatDateShort } from "@/lib/utilsApp";
+import { computeHealthScore, formatDateShort, formatDate } from "@/lib/utilsApp";
 
 interface HrPeopleProps {
   data: AppData;
@@ -7,6 +8,9 @@ interface HrPeopleProps {
 }
 
 function HrPeople({ data, onSelectPerson }: HrPeopleProps) {
+  const [modalType, setModalType] = useState<"commits" | "achievements" | null>(null);
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
@@ -68,6 +72,7 @@ function HrPeople({ data, onSelectPerson }: HrPeopleProps) {
             <tr className="border-b border-[#e0e0e0] text-left">
               <th className="p-3 font-medium">Name</th>
               <th className="p-3 font-medium">Department</th>
+              <th className="p-3 font-medium">Commitments</th>
               <th className="p-3 font-medium">Last update</th>
               <th className="p-3 font-medium">Health score</th>
               <th className="p-3 font-medium">Status</th>
@@ -75,10 +80,34 @@ function HrPeople({ data, onSelectPerson }: HrPeopleProps) {
             </tr>
           </thead>
           <tbody>
-            {peopleData.map((person) => (
+            {peopleData.map((person) => {
+              const commitCount = (data.commits ?? []).filter((c) => c.personId === person.id).length;
+              const achievementCount = (data.achievements ?? []).filter((a) => a.personId === person.id).length;
+              return (
               <tr key={person.id} className="border-b border-[#e0e0e0]">
                 <td className="p-3">{person.name}</td>
                 <td className="p-3">{person.department}</td>
+                <td className="p-3 text-xs">
+                  <button
+                    onClick={() => {
+                      setModalType("commits");
+                      setSelectedPersonId(person.id);
+                    }}
+                    className="font-medium text-[#0066cc] hover:underline cursor-pointer"
+                  >
+                    {commitCount}
+                  </button>
+                  <span className="text-[#999]"> / </span>
+                  <button
+                    onClick={() => {
+                      setModalType("achievements");
+                      setSelectedPersonId(person.id);
+                    }}
+                    className="font-medium text-[#0066cc] hover:underline cursor-pointer"
+                  >
+                    {achievementCount}
+                  </button>
+                </td>
                 <td className="p-3">
                   {person.lastUpdate ? formatDateShort(person.lastUpdate.updatedAt) : "Never"}
                 </td>
@@ -117,10 +146,90 @@ function HrPeople({ data, onSelectPerson }: HrPeopleProps) {
                   </button>
                 </td>
               </tr>
-            ))}
+            );
+            }))}
           </tbody>
         </table>
       </div>
+
+      {/* Commits Modal */}
+      {modalType === "commits" && selectedPersonId && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/45 z-50 p-4">
+          <div className="w-full max-w-2xl max-h-96 overflow-y-auto rounded-lg bg-white shadow-lg">
+            <div className="sticky top-0 flex items-center justify-between border-b border-[#e0e0e0] bg-white px-6 py-4">
+              <h3 className="font-medium text-[#222]">
+                {data.people.find((p) => p.id === selectedPersonId)?.name}'s Commitments
+              </h3>
+              <button
+                onClick={() => {
+                  setModalType(null);
+                  setSelectedPersonId(null);
+                }}
+                className="text-xl text-[#999] hover:text-[#222]"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-3">
+              {(data.commits ?? [])
+                .filter((c) => c.personId === selectedPersonId)
+                .map((commit) => (
+                  <div key={commit.id} className="rounded-lg border border-[#e0e0e0] bg-[#f9f9f9] p-4">
+                    <div className="mb-2 text-sm font-medium text-[#222]">
+                      {commit.statement}
+                    </div>
+                    <div className="text-xs text-[#999]">
+                      {formatDate(commit.createdAt)} • {commit.level.toUpperCase()}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Achievements Modal */}
+      {modalType === "achievements" && selectedPersonId && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/45 z-50 p-4">
+          <div className="w-full max-w-2xl max-h-96 overflow-y-auto rounded-lg bg-white shadow-lg">
+            <div className="sticky top-0 flex items-center justify-between border-b border-[#e0e0e0] bg-white px-6 py-4">
+              <h3 className="font-medium text-[#222]">
+                {data.people.find((p) => p.id === selectedPersonId)?.name}'s Achievements
+              </h3>
+              <button
+                onClick={() => {
+                  setModalType(null);
+                  setSelectedPersonId(null);
+                }}
+                className="text-xl text-[#999] hover:text-[#222]"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-3">
+              {(data.achievements ?? [])
+                .filter((a) => a.personId === selectedPersonId)
+                .map((achievement) => (
+                  <div key={achievement.id} className="rounded-lg border border-[#e0e0e0] bg-[#f9f9f9] p-4">
+                    <div className="mb-1 text-sm font-medium text-[#222]">
+                      {achievement.title}
+                    </div>
+                    <div className="mb-2 text-xs text-[#666] leading-relaxed">
+                      {achievement.evidence}
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs text-[#999]">
+                      <span>{formatDate(achievement.date)}</span>
+                      <span>•</span>
+                      <span>Impact: {achievement.impactRating}/10</span>
+                      <span>•</span>
+                      <span>{achievement.cpqsdp.join(", ")}</span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
