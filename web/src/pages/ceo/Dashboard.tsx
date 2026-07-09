@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { AppData, Dim } from "@/lib/types";
 import { CPQSDP_DIMS, formatDate } from "@/lib/utilsApp";
 
@@ -6,6 +7,7 @@ interface DashboardProps {
 }
 
 function Dashboard({ data }: DashboardProps) {
+  const [selectedDim, setSelectedDim] = useState<Dim | null>(null);
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
@@ -74,9 +76,13 @@ function Dashboard({ data }: DashboardProps) {
           const isScore = score !== "—";
 
           return (
-            <div key={dim.key} className="rounded-xl border border-[#e0e0e0] bg-white p-4">
+            <button
+              key={dim.key}
+              onClick={() => setSelectedDim(dim.key)}
+              className="rounded-xl border border-[#e0e0e0] bg-white p-4 text-left transition hover:border-[#999] hover:shadow-md"
+            >
               <div className="mb-2 text-xs text-[#666]">{dim.label}</div>
-              <div className="mb-2 text-xl font-medium" style={{ color: dim.color }}>
+              <div className="mb-2 text-xl font-medium cursor-pointer" style={{ color: dim.color }}>
                 {score}
               </div>
               {isScore && (
@@ -90,7 +96,7 @@ function Dashboard({ data }: DashboardProps) {
                   />
                 </div>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
@@ -122,6 +128,90 @@ function Dashboard({ data }: DashboardProps) {
       ) : (
         <div className="rounded-xl border border-[#e0e0e0] bg-white p-8 text-center text-[13px] text-[#999]">
           No achievements yet
+        </div>
+      )}
+
+      {/* Dimension Breakdown Modal */}
+      {selectedDim && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/45 z-50 p-4">
+          <div className="w-full max-w-2xl max-h-96 overflow-y-auto rounded-lg bg-white shadow-lg">
+            {(() => {
+              const dim = CPQSDP_DIMS.find((d) => d.key === selectedDim);
+              const achievementsWithDim = data.achievements.filter((a) =>
+                a.cpqsdp.includes(selectedDim)
+              );
+              const score =
+                achievementsWithDim.length > 0
+                  ? (
+                      achievementsWithDim.reduce((sum, a) => sum + a.impactRating, 0) /
+                      achievementsWithDim.length
+                    ).toFixed(1)
+                  : "—";
+
+              return (
+                <>
+                  <div className="sticky top-0 flex items-center justify-between border-b border-[#e0e0e0] bg-white px-6 py-4">
+                    <div>
+                      <h3 className="font-medium text-[#222]">{dim?.label} Breakdown</h3>
+                      <p className="text-sm text-[#999] mt-1">
+                        Average score: <span className="font-medium" style={{ color: dim?.color }}>
+                          {score}
+                        </span> / 10
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedDim(null)}
+                      className="text-xl text-[#999] hover:text-[#222]"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="p-6 space-y-3">
+                    {achievementsWithDim.length > 0 ? (
+                      achievementsWithDim
+                        .sort((a, b) => b.impactRating - a.impactRating)
+                        .map((achievement) => {
+                          const person = data.people.find((p) => p.id === achievement.personId);
+                          return (
+                            <div
+                              key={achievement.id}
+                              className="rounded-lg border border-[#e0e0e0] bg-[#f9f9f9] p-4"
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-[#222]">
+                                    {achievement.title}
+                                  </div>
+                                  <div className="text-xs text-[#666] mt-1">
+                                    {person?.name} • {formatDate(achievement.date)}
+                                  </div>
+                                </div>
+                                <div
+                                  className="rounded-lg px-2.5 py-1 text-xs font-medium text-white ml-3 flex-shrink-0"
+                                  style={{ backgroundColor: dim?.color }}
+                                >
+                                  {achievement.impactRating}/10
+                                </div>
+                              </div>
+                              <p className="text-xs text-[#666] mb-2 leading-relaxed">
+                                {achievement.evidence}
+                              </p>
+                              <div className="text-xs text-[#999]">
+                                Impacts: {achievement.cpqsdp.join(", ")}
+                              </div>
+                            </div>
+                          );
+                        })
+                    ) : (
+                      <div className="text-center py-8 text-[#999]">
+                        No achievements for this dimension
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
         </div>
       )}
     </div>
