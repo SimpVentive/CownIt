@@ -19,8 +19,11 @@ function Dashboard({ data }: DashboardProps) {
       : "—";
 
   const updatedCount = data.people.filter((p) =>
-    data.monthlyUpdates.some(
-      (u) => u.personId === p.id && u.month === currentMonth && u.year === currentYear
+    (data.monthlyUpdates ?? []).some(
+      (u) =>
+        u.personId === p.id &&
+        u.month === currentMonth &&
+        u.year === currentYear
     )
   ).length;
 

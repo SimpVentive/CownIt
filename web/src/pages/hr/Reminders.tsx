@@ -18,15 +18,23 @@ function Reminders({ data, onDataChange }: RemindersProps) {
 
   const overduePeople = data.people.filter(
     (p) =>
-      !data.monthlyUpdates.some(
-        (u) => u.personId === p.id && u.month === currentMonth && u.year === currentYear
+      !(data.monthlyUpdates ?? []).some(
+        (u) =>
+          u.personId === p.id &&
+          u.month === currentMonth &&
+          u.year === currentYear
       )
   );
 
   const getLastUpdateDate = (personId: string): string => {
-    const lastUpdate = [...data.monthlyUpdates]
+    const lastUpdate = (data.monthlyUpdates ?? [])
       .filter((u) => u.personId === personId)
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() -
+          new Date(a.updatedAt).getTime()
+      )[0];
+
     return lastUpdate ? formatDateShort(lastUpdate.updatedAt) : "Never";
   };
 

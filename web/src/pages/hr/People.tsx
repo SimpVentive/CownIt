@@ -12,12 +12,22 @@ function HrPeople({ data, onSelectPerson }: HrPeopleProps) {
 
   const peopleData = data.people.map((person) => {
     const score = computeHealthScore(person.id, data);
-    const hasUpdate = data.monthlyUpdates.some(
-      (u) => u.personId === person.id && u.month === currentMonth && u.year === currentYear
+    const monthlyUpdates = data.monthlyUpdates ?? [];
+
+    const hasUpdate = monthlyUpdates.some(
+      u =>
+        u.personId === person.id &&
+        u.month === currentMonth &&
+        u.year === currentYear
     );
-    const lastUpdate = [...data.monthlyUpdates]
-      .filter((u) => u.personId === person.id)
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+
+    const lastUpdate = [...monthlyUpdates]
+      .filter(u => u.personId === person.id)
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() -
+          new Date(a.updatedAt).getTime()
+      )[0];
 
     return { ...person, score, hasUpdate, lastUpdate };
   });

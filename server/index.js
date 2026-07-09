@@ -140,7 +140,7 @@ app.get('/api/people', verifyToken, async (req, res) => {
 // Commits
 app.get('/api/commits', verifyToken, async (req, res) => {
   try {
-    if(req.user.role==='ceo'){
+    if(req.user.role==='ceo' || req.user.role==='hr') {
       const commits = await dbAll('SELECT * FROM commits ORDER BY createdAt DESC')
       res.json(commits)
     }
@@ -179,7 +179,7 @@ app.post('/api/commits', verifyToken, async (req, res) => {
 // Achievements
 app.get('/api/achievements', verifyToken, async (req, res) => {
   try {
-    if(req.user.role === 'ceo') {
+    if(req.user.role === 'ceo' || req.user.role==='hr') {
       const achievements = await dbAll('SELECT * FROM achievements ORDER BY date DESC')
       const parsedAchievements = achievements.map(a => ({
         ...a,
