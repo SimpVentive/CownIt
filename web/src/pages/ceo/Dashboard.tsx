@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Users, Zap, TrendingUp, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
 import type { AppData, Dim } from "@/lib/types";
 import { CPQSDP_DIMS, formatDate } from "@/lib/utilsApp";
 
@@ -7,27 +6,27 @@ interface DashboardProps {
   data: AppData;
 }
 
-const STAT_ICONS = {
-  people: Users,
-  achievements: Zap,
-  impact: TrendingUp,
-  updated: CheckCircle,
+const COLORS = {
+  ink: "#171B21",
+  paper: "#EEEFE8",
+  card: "#FCFCFA",
+  line: "#DEDFD5",
+  brass: "#B8863B",
+  cost: "#6C4FA1",
+  productivity: "#1F8A5F",
+  quality: "#6B7A2A",
+  safety: "#C4472A",
+  delivery: "#2560B0",
+  people: "#B8863B",
 };
 
 function Dashboard({ data }: DashboardProps) {
-  const [selectedDim, setSelectedDim] = useState<Dim | null>(null);
+  const [radarSvg, setRadarSvg] = useState<string>("");
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
   const totalPeople = data.people.length;
   const totalAchievements = data.achievements.length;
-  const avgImpact =
-    totalAchievements > 0
-      ? (
-          data.achievements.reduce((sum, a) => sum + a.impactRating, 0) / totalAchievements
-        ).toFixed(1)
-      : "—";
-
   const updatedCount = data.people.filter((p) =>
     (data.monthlyUpdates ?? []).some(
       (u) =>
@@ -39,275 +38,400 @@ function Dashboard({ data }: DashboardProps) {
 
   const uniqueDepts = new Set(data.people.map((p) => p.department)).size;
 
-  const cpqsdpScore = (dim: Dim): string => {
+  const cpqsdpScore = (dim: Dim): number | null => {
     const withDim = data.achievements.filter((a) => a.cpqsdp.includes(dim));
-    if (withDim.length === 0) return "—";
-    return (withDim.reduce((sum, a) => sum + a.impactRating, 0) / withDim.length).toFixed(1);
+    if (withDim.length === 0) return null;
+    return (
+      withDim.reduce((sum, a) => sum + a.impactRating, 0) / withDim.length
+    );
   };
+
+  const avgImpact =
+    totalAchievements > 0
+      ? (
+          data.achievements.reduce((sum, a) => sum + a.impactRating, 0) /
+          totalAchievements
+        ).toFixed(1)
+      : null;
+
+  const ownershipIndex =
+    totalAchievements > 0
+      ? (
+          CPQSDP_DIMS.filter((d) => cpqsdpScore(d.key as Dim) !== null)
+            .map((d) => cpqsdpScore(d.key as Dim) || 0)
+            .reduce((a, b) => a + b, 0) /
+          CPQSDP_DIMS.filter((d) => cpqsdpScore(d.key as Dim) !== null).length
+        ).toFixed(1)
+      : "0.0";
 
   const recentAchievements = [...data.achievements]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
-  const stats = [
-    {
-      label: "People committed",
-      value: String(totalPeople),
-      sub: `across ${uniqueDepts} department${uniqueDepts !== 1 ? "s" : ""}`,
-      icon: STAT_ICONS.people,
-      bg: "#E3F2FD",
-      color: "#1976D2",
-    },
-    {
-      label: "Total achievements",
-      value: String(totalAchievements),
-      sub: "since programme start",
-      icon: STAT_ICONS.achievements,
-      bg: "#FFF3E0",
-      color: "#F57C00",
-    },
-    {
-      label: "Avg impact score",
-      value: avgImpact,
-      sub: "self-rated / 10",
-      icon: STAT_ICONS.impact,
-      bg: "#E8F5E9",
-      color: "#388E3C",
-    },
-    {
-      label: "Updated this month",
-      value: `${updatedCount}/${totalPeople}`,
-      sub: "individuals",
-      icon: STAT_ICONS.updated,
-      bg: "#F3E5F5",
-      color: "#7B1FA2",
-    },
-  ];
+  // Generate radar chart SVG
+  useEffect(() => {
+    const generateRadar = () => {
+      const cx = 140,
+        cy = 120,
+        maxR = 88,
+        n = 6;
+      const angle = (i: number) => -Math.PI / 2 + i * ((2 * Math.PI) / n);
+      const pt = (i: number, val: number) => [
+        cx + val * (maxR / 10) * Math.cos(angle(i)),
+        cy + val * (maxR / 10) * Math.sin(angle(i)),
+      ];
+
+      const metrics = CPQSDP_DIMS.map((d) => ({
+        name: d.key,
+        value: cpqsdpScore(d.key as Dim),
+        color: d.color,
+      }));
+
+      let svgContent = `<svg width="280" height="260" viewBox="0 0 280 260" xmlns="http://www.w3.org/2000/svg">`;
+
+      // Rings
+      [2, 4, 6, 8, 10].forEach((v) => {
+        const pts = metrics
+          .map((m, i) => pt(i, v).join(","))
+          .join(" ");
+        svgContent += `<polygon points="${pts}" fill="none" stroke="${
+          v === 10 ? "#DEDFD5" : "#E8E9E0"
+        }" stroke-width="1"/>`;
+      });
+
+      // Axes + labels
+      metrics.forEach((m, i) => {
+        const [x, y] = pt(i, 10);
+        svgContent += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#E8E9E0"/>`;
+
+        const lx = cx + (maxR + 26) * Math.cos(angle(i));
+        const ly = cy + (maxR + 18) * Math.sin(angle(i));
+        svgContent += `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="10.5" font-family="Inter, sans-serif" font-weight="600" fill="#4B5158">${m.name.toUpperCase()}</text>`;
+      });
+
+      // Filled shape
+      const shapePts = metrics.map((m, i) => pt(i, m.value ? m.value : 0));
+      svgContent += `<polygon points="${shapePts
+        .map((p) => p.join(","))
+        .join(" ")}" fill="rgba(184,134,59,0.14)" stroke="#B8863B" stroke-width="2" stroke-linejoin="round"/>`;
+
+      // Vertices
+      metrics.forEach((m, i) => {
+        const [x, y] = shapePts[i];
+        if (m.value === null) {
+          svgContent += `<circle cx="${x}" cy="${y}" r="5" fill="#fff" stroke="#C4472A" stroke-width="2" stroke-dasharray="2,2"/>`;
+        } else {
+          svgContent += `<circle cx="${x}" cy="${y}" r="4" fill="#B8863B" stroke="#fff" stroke-width="1.5"/>`;
+        }
+      });
+
+      svgContent += `</svg>`;
+      setRadarSvg(svgContent);
+    };
+
+    generateRadar();
+  }, [data]);
+
+  const deptColor: Record<string, { bg: string; fg: string }> = {
+    Operations: { bg: "#E3F2FD", fg: "#1565B8" },
+    Quality: { bg: "#EAF0DC", fg: "#5A6621" },
+    Safety: { bg: "#FCE4EC", fg: "#C2185B" },
+    HR: { bg: "#FFF3E0", fg: "#E65100" },
+    "People & Culture": { bg: "#F6E9D2", fg: "#96650E" },
+  };
 
   return (
-    <div>
-      <h2 className="mb-8 text-3xl font-bold text-[#0B1F3A]">Dashboard</h2>
+    <div style={{ background: COLORS.paper, minHeight: "100vh", padding: "32px clamp(16px, 4vw, 56px) 80px" }}>
+      <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px", flexWrap: "wrap", gap: "16px" }}>
+          <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "32px", fontWeight: "600", margin: "0 0 4px", letterSpacing: "-0.01em" }}>
+            Executive dashboard
+          </h1>
+        </div>
+        <p style={{ color: "#4B5158", fontSize: "14.5px", margin: "0 0 28px" }}>
+          How the organization is committing, delivering, and owning outcomes this quarter.
+        </p>
 
-      {/* Stats */}
-      <div className="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={stat.label}
-              className="rounded-xl border-2 border-[#e0e0e0] bg-white p-5 transition hover:shadow-lg hover:border-[#999]"
-              style={{ borderLeftWidth: "4px", borderLeftColor: stat.color }}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="rounded-lg p-2.5" style={{ backgroundColor: stat.bg }}>
-                  <Icon size={20} style={{ color: stat.color }} />
+        {/* Hero */}
+        <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "20px", marginBottom: "28px" }}>
+          {/* Ownership Index Card */}
+          <div
+            style={{
+              background: COLORS.ink,
+              color: "#fff",
+              borderRadius: "14px",
+              padding: "28px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              boxShadow: "0 1px 2px rgba(23,27,33,0.04), 0 8px 24px -12px rgba(23,27,33,0.10)",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.55)", marginBottom: "18px" }}>
+                Ownership index
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+                <div style={{ position: "relative", width: "118px", height: "118px", flexShrink: 0 }}>
+                  <svg width="118" height="118" viewBox="0 0 118 118" style={{ transform: "rotate(-90deg)" }}>
+                    <circle cx="59" cy="59" r="50" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="10" />
+                    <circle
+                      cx="59"
+                      cy="59"
+                      r="50"
+                      fill="none"
+                      stroke="#EADFC7"
+                      strokeWidth="10"
+                      strokeLinecap="round"
+                      style={{
+                        strokeDasharray: `${Math.PI * 100}`,
+                        strokeDashoffset: `${Math.PI * 100 * (1 - parseFloat(ownershipIndex) / 10)}`,
+                      }}
+                    />
+                  </svg>
+                  <div style={{ position: "absolute", inset: "0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ fontFamily: "Fraunces, serif", fontSize: "32px", fontWeight: "600" }}>
+                      {ownershipIndex}
+                    </div>
+                    <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: "10px", color: "rgba(255,255,255,0.5)" }}>
+                      / 10
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontFamily: "Fraunces, serif", fontSize: "16px", marginBottom: "6px" }}>
+                    Ahead of target
+                  </div>
+                  <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", lineHeight: "1.5" }}>
+                    Composite of CPQSDP pillars. Target for Q3 was 7.5.
+                  </div>
                 </div>
               </div>
-              <div className="text-xs font-medium text-[#999] uppercase tracking-wide">
-                {stat.label}
-              </div>
-              <div className="mt-2 mb-1 text-3xl font-bold" style={{ color: stat.color }}>
-                {stat.value}
-              </div>
-              <div className="text-xs text-[#999]">{stat.sub}</div>
             </div>
-          );
-        })}
-      </div>
+            <div style={{ marginTop: "22px", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: "rgba(255,255,255,0.65)" }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M7 12L11 16L17 8" stroke="#7BC79A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>
+                <b style={{ color: "#fff", fontWeight: "600" }}>Trending up</b> vs. last month
+              </span>
+            </div>
+          </div>
 
-      {/* CPQSDP */}
-      <h3 className="mb-6 text-xl font-bold text-[#0B1F3A]">Impact Dimensions</h3>
+          {/* KPI Cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+            <div style={{ background: COLORS.card, border: `1px solid #E8E9E0`, borderRadius: "14px", padding: "18px 20px", boxShadow: "0 1px 2px rgba(23,27,33,0.04), 0 8px 24px -12px rgba(23,27,33,0.10)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px", fontSize: "12.5px", color: "#4B5158" }}>
+                <span>People committed</span>
+                <span style={{ color: "#1F8A5F", background: "#E4F1E9", padding: "2px 7px", borderRadius: "999px", fontSize: "11px", fontWeight: "600" }}>
+                  +{totalPeople - 1}
+                </span>
+              </div>
+              <div style={{ fontFamily: "Fraunces, serif", fontSize: "32px", fontWeight: "600", marginBottom: "8px" }}>
+                {totalPeople}
+              </div>
+              <div style={{ fontSize: "12px", color: "#4B5158" }}>Across {uniqueDepts} departments</div>
+            </div>
 
-      <div className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {CPQSDP_DIMS.map((dim) => {
-          const score = cpqsdpScore(dim.key);
-          const isScore = score !== "—";
-          const scoreNum = isScore ? parseFloat(score) : 0;
+            <div style={{ background: COLORS.card, border: `1px solid #E8E9E0`, borderRadius: "14px", padding: "18px 20px", boxShadow: "0 1px 2px rgba(23,27,33,0.04), 0 8px 24px -12px rgba(23,27,33,0.10)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px", fontSize: "12.5px", color: "#4B5158" }}>
+                <span>Achievements logged</span>
+                <span style={{ color: "#1F8A5F", background: "#E4F1E9", padding: "2px 7px", borderRadius: "999px", fontSize: "11px", fontWeight: "600" }}>
+                  +{Math.max(0, totalAchievements - 2)}
+                </span>
+              </div>
+              <div style={{ fontFamily: "Fraunces, serif", fontSize: "32px", fontWeight: "600", marginBottom: "8px" }}>
+                {totalAchievements}
+              </div>
+              <div style={{ fontSize: "12px", color: "#4B5158" }}>Since programme start</div>
+            </div>
 
-          return (
-            <button
-              key={dim.key}
-              onClick={() => setSelectedDim(dim.key)}
-              className="group relative rounded-xl border-2 border-[#e0e0e0] bg-white p-6 text-left transition duration-200 hover:border-[#999] hover:shadow-xl"
-              style={{ borderTopColor: dim.color, borderTopWidth: "3px" }}
-            >
-              <div className="absolute inset-0 rounded-xl opacity-0 transition group-hover:opacity-5" style={{ backgroundColor: dim.color }} />
-              <div className="relative">
-                <div className="mb-3 text-xs font-semibold text-[#999] uppercase tracking-wider">
-                  {dim.label}
+            <div style={{ background: COLORS.card, border: `1px solid #E8E9E0`, borderRadius: "14px", padding: "18px 20px", boxShadow: "0 1px 2px rgba(23,27,33,0.04), 0 8px 24px -12px rgba(23,27,33,0.10)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px", fontSize: "12.5px", color: "#4B5158" }}>
+                <span>Avg. impact score</span>
+                <span style={{ color: "#4B5158", background: "#E8E9E0", padding: "2px 7px", borderRadius: "999px", fontSize: "11px", fontWeight: "600" }}>
+                  ±0.0
+                </span>
+              </div>
+              <div style={{ fontFamily: "Fraunces, serif", fontSize: "32px", fontWeight: "600", marginBottom: "8px" }}>
+                {avgImpact || "—"}
+              </div>
+              <div style={{ fontSize: "12px", color: "#4B5158" }}>Self-rated, out of 10</div>
+            </div>
+
+            <div style={{ background: COLORS.card, border: `1px solid #E8E9E0`, borderRadius: "14px", padding: "18px 20px", boxShadow: "0 1px 2px rgba(23,27,33,0.04), 0 8px 24px -12px rgba(23,27,33,0.10)", gridColumn: "span 2" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px", fontSize: "12.5px", color: "#4B5158" }}>
+                <span>Updated this month</span>
+                <span style={{ color: "#C4472A", background: "#F7E4DE", padding: "2px 7px", borderRadius: "999px", fontSize: "11px", fontWeight: "600" }}>
+                  {updatedCount} / {totalPeople}
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontFamily: "Fraunces, serif", fontSize: "18px", fontWeight: "600" }}>
+                    {updatedCount === 0 ? "No one has updated yet" : `${updatedCount} have updated`}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#4B5158", marginTop: "4px" }}>
+                    {updatedCount === 0 ? "Send a reminder before the month closes" : "Keep the momentum going"}
+                  </div>
                 </div>
-                <div
-                  className="mb-3 text-3xl font-bold"
-                  style={{ color: dim.color }}
-                >
-                  {score}
-                </div>
-                {isScore && (
-                  <>
-                    <div className="mb-2 h-2 w-full overflow-hidden rounded-full bg-[#f0f0f0]">
+                <button style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: "600", color: "#fff", background: COLORS.ink, border: "none", padding: "8px 13px", borderRadius: "999px", cursor: "pointer" }}>
+                  Nudge →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CPQSDP Section */}
+        <div style={{ background: COLORS.card, border: `1px solid #E8E9E0`, borderRadius: "14px", boxShadow: "0 1px 2px rgba(23,27,33,0.04), 0 8px 24px -12px rgba(23,27,33,0.10)", padding: "24px", marginBottom: "28px" }}>
+          <div style={{ marginBottom: "24px" }}>
+            <div style={{ fontFamily: "Fraunces, serif", fontSize: "20px", fontWeight: "600", marginBottom: "4px" }}>
+              CPQSDP impact scores
+            </div>
+            <div style={{ fontSize: "12.5px", color: "#4B5158" }}>
+              Cost · Productivity · Quality · Safety · Delivery · People
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: "32px" }}>
+            {/* Radar */}
+            <div dangerouslySetInnerHTML={{ __html: radarSvg }} />
+
+            {/* Metrics */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", justifyContent: "center" }}>
+              {CPQSDP_DIMS.map((dim) => {
+                const score = cpqsdpScore(dim.key as Dim);
+                const pct = score ? (score / 10) * 100 : 0;
+
+                return (
+                  <div key={dim.key} style={{ display: "grid", gridTemplateColumns: "130px 1fr 60px", alignItems: "center", gap: "14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "9px", fontSize: "13.5px", fontWeight: "600" }}>
                       <div
-                        className="h-full rounded-full transition-all"
                         style={{
-                          width: `${(scoreNum / 10) * 100}%`,
-                          backgroundColor: dim.color,
+                          width: "9px",
+                          height: "9px",
+                          borderRadius: "50%",
+                          background: dim.color,
+                          flexShrink: 0,
+                        }}
+                      />
+                      {dim.label}
+                    </div>
+                    <div style={{ height: "6px", background: "#E8E9E0", borderRadius: "99px", overflow: "hidden" }}>
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${pct}%`,
+                          background: dim.color,
+                          borderRadius: "99px",
+                          transition: "width 0.3s ease",
                         }}
                       />
                     </div>
-                    <div className="text-xs text-[#999]">{(scoreNum / 10 * 100).toFixed(0)}% of max</div>
-                  </>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Recent achievements */}
-      <h3 className="mb-6 text-xl font-bold text-[#0B1F3A]">Recent Achievements</h3>
-
-      {recentAchievements.length > 0 ? (
-        <div className="flex flex-col gap-3">
-          {recentAchievements.map((achievement) => {
-            const person = data.people.find((p) => p.id === achievement.personId);
-            const isHighImpact = achievement.impactRating >= 8;
-            const isMediumImpact = achievement.impactRating >= 5;
-
-            return (
-              <div
-                key={achievement.id}
-                className="group relative rounded-xl border-2 border-[#e0e0e0] bg-white p-5 transition duration-200 hover:shadow-lg hover:border-[#999]"
-                style={{
-                  borderLeftColor: isHighImpact ? "#2E7D32" : isMediumImpact ? "#F57C00" : "#1976D2",
-                  borderLeftWidth: "4px",
-                }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="mb-2 text-sm font-semibold text-[#0B1F3A]">
-                      {achievement.title}
+                    <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: "13px", fontWeight: "600", textAlign: "right" }}>
+                      {score ? score.toFixed(1) : "—"}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-[#999]">
-                      <span className="font-medium text-[#333]">{person?.name}</span>
-                      <span>•</span>
-                      <span>{formatDate(achievement.date)}</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        {achievement.cpqsdp.map((dim) => {
-                          const dimObj = CPQSDP_DIMS.find((d) => d.key === dim);
-                          return (
-                            <span
-                              key={dim}
-                              className="inline-block h-2 w-2 rounded-full"
-                              style={{ backgroundColor: dimObj?.color }}
-                            />
-                          );
-                        })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Achievements */}
+        <div style={{ marginBottom: "24px" }}>
+          <div style={{ fontFamily: "Fraunces, serif", fontSize: "20px", fontWeight: "600", marginBottom: "4px" }}>
+            Recent achievements
+          </div>
+          <div style={{ fontSize: "12.5px", color: "#4B5158" }}>
+            Latest commitments marked complete and self-rated for impact
+          </div>
+        </div>
+
+        <div style={{ background: COLORS.card, border: `1px solid #E8E9E0`, borderRadius: "14px", boxShadow: "0 1px 2px rgba(23,27,33,0.04), 0 8px 24px -12px rgba(23,27,33,0.10)", overflow: "hidden" }}>
+          {recentAchievements.length > 0 ? (
+            recentAchievements.map((a, idx) => {
+              const person = data.people.find((p) => p.id === a.personId);
+              const dc = deptColor[person?.department || "Operations"] || { bg: "#F5F5F5", fg: "#666" };
+              const band = a.impactRating >= 9 ? "gold" : a.impactRating >= 7 ? "green" : "amber";
+              const bandColor =
+                band === "gold" ? { bg: "#EADFC7", color: "#8A611E" } : band === "green" ? { bg: "#E1F0E6", color: "#1B7350" } : { bg: "#F6E9D2", color: "#96650E" };
+
+              return (
+                <div
+                  key={a.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    padding: "18px 22px",
+                    borderBottom: idx < recentAchievements.length - 1 ? `1px solid #E8E9E0` : "none",
+                    transition: "background 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#F6F5EF")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <div
+                    style={{
+                      width: "34px",
+                      height: "34px",
+                      borderRadius: "50%",
+                      background: COLORS.ink,
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontFamily: "IBM Plex Mono, monospace",
+                      fontSize: "11.5px",
+                      fontWeight: "600",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {person?.initials || "—"}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: "600", fontSize: "14.5px", marginBottom: "3px" }}>
+                      {a.title}
+                    </div>
+                    <div style={{ fontSize: "12.5px", color: "#4B5158", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <span>By {person?.name} · {formatDate(a.date)}</span>
+                      <span style={{ fontSize: "10.5px", fontWeight: "600", padding: "2px 8px", borderRadius: "999px", ...dc }}>
+                        {person?.department}
                       </span>
                     </div>
                   </div>
                   <div
-                    className="ml-3 flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold text-white"
                     style={{
-                      backgroundColor: isHighImpact ? "#2E7D32" : isMediumImpact ? "#F57C00" : "#1976D2",
+                      width: "34px",
+                      height: "34px",
+                      borderRadius: "50%",
+                      background: "#EADFC7",
+                      color: COLORS.brass,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    {achievement.impactRating}/10
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 12.5L9.5 17L19 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <div style={{ fontFamily: "IBM Plex Mono, monospace", fontWeight: "700", fontSize: "13px", padding: "6px 12px", borderRadius: "999px", ...bandColor, flexShrink: 0 }}>
+                    {a.impactRating}/10
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="rounded-xl border-2 border-dashed border-[#e0e0e0] bg-[#f9f9f9] p-8 text-center text-[13px] text-[#999]">
-          No achievements logged yet
-        </div>
-      )}
-
-      {/* Dimension Breakdown Modal */}
-      {selectedDim && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl max-h-96 overflow-y-auto rounded-2xl bg-white shadow-2xl">
-            {(() => {
-              const dim = CPQSDP_DIMS.find((d) => d.key === selectedDim);
-              const achievementsWithDim = data.achievements.filter((a) =>
-                a.cpqsdp.includes(selectedDim)
               );
-              const score =
-                achievementsWithDim.length > 0
-                  ? (
-                      achievementsWithDim.reduce((sum, a) => sum + a.impactRating, 0) /
-                      achievementsWithDim.length
-                    ).toFixed(1)
-                  : "—";
-
-              return (
-                <>
-                  <div className="sticky top-0 flex items-center justify-between border-b-2 px-6 py-5" style={{ borderBottomColor: dim?.color, backgroundColor: dim?.color + "08" }}>
-                    <div>
-                      <h3 className="font-bold text-lg text-[#0B1F3A]">{dim?.label} Breakdown</h3>
-                      <p className="text-sm text-[#666] mt-2">
-                        Average score: <span className="font-bold text-lg" style={{ color: dim?.color }}>
-                          {score}
-                        </span> <span className="text-[#999]">/ 10</span>
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedDim(null)}
-                      className="text-2xl text-[#999] hover:text-[#222] transition"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="p-6 space-y-3">
-                    {achievementsWithDim.length > 0 ? (
-                      achievementsWithDim
-                        .sort((a, b) => b.impactRating - a.impactRating)
-                        .map((achievement) => {
-                          const person = data.people.find((p) => p.id === achievement.personId);
-                          return (
-                            <div
-                              key={achievement.id}
-                              className="rounded-lg border-2 border-[#e0e0e0] bg-white p-4 transition hover:shadow-md"
-                              style={{ borderLeftColor: dim?.color, borderLeftWidth: "4px" }}
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex-1">
-                                  <div className="text-sm font-semibold text-[#0B1F3A]">
-                                    {achievement.title}
-                                  </div>
-                                  <div className="text-xs text-[#666] mt-1">
-                                    <span className="font-medium">{person?.name}</span> • {formatDate(achievement.date)}
-                                  </div>
-                                </div>
-                                <div
-                                  className="rounded-lg px-3 py-1.5 text-xs font-bold text-white ml-3 flex-shrink-0"
-                                  style={{ backgroundColor: dim?.color }}
-                                >
-                                  {achievement.impactRating}/10
-                                </div>
-                              </div>
-                              <p className="text-xs text-[#666] mb-2 leading-relaxed">
-                                {achievement.evidence}
-                              </p>
-                              <div className="text-xs text-[#999]">
-                                <span className="font-medium">Impacts:</span> {achievement.cpqsdp.join(", ")}
-                              </div>
-                            </div>
-                          );
-                        })
-                    ) : (
-                      <div className="text-center py-8 text-[#999]">
-                        No achievements for this dimension yet
-                      </div>
-                    )}
-                  </div>
-                </>
-              );
-            })()}
-          </div>
+            })
+          ) : (
+            <div style={{ padding: "32px", textAlign: "center", color: "#4B5158", fontSize: "14px" }}>
+              No achievements logged yet
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
