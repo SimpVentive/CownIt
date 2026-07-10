@@ -147,7 +147,7 @@ function HrPeople({ data, onSelectPerson }: HrPeopleProps) {
                 </td>
               </tr>
             );
-            }))}
+            })}
           </tbody>
         </table>
       </div>
