@@ -1,46 +1,33 @@
 import { useState } from "react";
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  ShieldCheck,
-  User,
-  Users,
-  Briefcase,
-  Check,
-} from "lucide-react";
-import type { Role } from "@/lib/types";
-import { login as apiLogin } from "@/lib/api";
-import Signup from "./Signup";
+import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 
 const NAVY = "#0B1F3A";
 const GREEN = "#2E7D32";
 
-interface LoginProps {
-  onLoginSuccess: (role: Role, userId: string, userName: string) => void;
+interface SignupProps {
+  onSignupSuccess: () => void;
+  onBackToLogin: () => void;
 }
 
-const ROLES: { value: Role; label: string; icon: typeof User }[] = [
-  { value: "individual", label: "Individual", icon: User },
-  { value: "hr", label: "HR", icon: Users },
-  { value: "ceo", label: "CEO", icon: Briefcase },
-];
-
-function Login({ onLoginSuccess }: LoginProps) {
-  const [isSignup, setIsSignup] = useState<boolean>(false);
+function Signup({ onSignupSuccess, onBackToLogin }: SignupProps) {
+  const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [passwordVisible, setPasswordVisible] = useState<boolean>(false);
-  const [twoFaEnabled, setTwoFaEnabled] = useState<boolean>(true);
-  const [rememberMe, setRememberMe] = useState<boolean>(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const canSubmit = email.length > 0 && password.length > 0;
+  const canSubmit = name.length > 0 && email.length > 0 && password.length > 0 && confirmPassword.length > 0;
 
-  const handleLogin = async () => {
+  const handleSignup = async () => {
     setError("");
+
+    if (!name) {
+      setError("Enter your name");
+      return;
+    }
     if (!email) {
       setError("Enter email address");
       return;
@@ -49,37 +36,28 @@ function Login({ onLoginSuccess }: LoginProps) {
       setError("Enter password");
       return;
     }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
 
     setIsLoading(true);
     try {
-      const response = await apiLogin(email, password);
-      const user = response.user;
-      onLoginSuccess(user.role as Role, user.id, user.name);
+      // For now, just show success. Backend signup would go here.
+      console.log("Signup attempt:", { name, email, password });
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      onSignupSuccess();
     } catch (err) {
-      setError((err as Error).message || "Login failed. Please try again.");
+      setError((err as Error).message || "Signup failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
-
-  if (isSignup) {
-    return (
-      <Signup
-        onSignupSuccess={() => {
-          setIsSignup(false);
-          setEmail("");
-          setPassword("");
-          setError("");
-        }}
-        onBackToLogin={() => {
-          setIsSignup(false);
-          setEmail("");
-          setPassword("");
-          setError("");
-        }}
-      />
-    );
-  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white">
@@ -124,7 +102,22 @@ function Login({ onLoginSuccess }: LoginProps) {
 
         {/* Card */}
         <div className="w-full max-w-md rounded-xl border border-[#e0e0e0] bg-white p-6 shadow-sm">
-          <div className="mb-6 text-center text-base font-medium text-black">Login to CownIt</div>
+          <div className="mb-6 text-center text-base font-medium text-black">Sign up for CownIt</div>
+
+          {/* Name */}
+          <div className="mb-3.5 flex items-center gap-3 rounded-lg border border-[#e0e0e0] px-3 focus-within:border-[#999]">
+            <User size={18} className="shrink-0 text-[#666]" />
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError("");
+              }}
+              placeholder="Full name"
+              className="w-full bg-transparent py-3 text-sm outline-none placeholder:text-[#999]"
+            />
+          </div>
 
           {/* Email */}
           <div className="mb-3.5 flex items-center gap-3 rounded-lg border border-[#e0e0e0] px-3 focus-within:border-[#999]">
@@ -151,10 +144,7 @@ function Login({ onLoginSuccess }: LoginProps) {
                 setPassword(e.target.value);
                 setError("");
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleLogin();
-              }}
-              placeholder="Password"
+              placeholder="Password (min. 8 characters)"
               className="w-full bg-transparent py-3 text-sm outline-none placeholder:text-[#999]"
             />
             <button
@@ -167,44 +157,29 @@ function Login({ onLoginSuccess }: LoginProps) {
             </button>
           </div>
 
-          {/* 2FA toggle */}
-          <div className="mb-3 flex items-center gap-3 rounded-lg border border-[#e0e0e0] p-3">
-            <ShieldCheck size={22} className="shrink-0 text-[#666]" strokeWidth={1.75} />
-            <div className="flex-1">
-              <div className="text-[13px] font-medium text-black">
-                Two-factor authentication (2FA)
-              </div>
-              <div className="text-xs text-[#999]">Secure your account with 2FA</div>
-            </div>
+          {/* Confirm Password */}
+          <div className="mb-3.5 flex items-center gap-3 rounded-lg border border-[#e0e0e0] px-3 focus-within:border-[#999]">
+            <Lock size={18} className="shrink-0 text-[#666]" />
+            <input
+              type={confirmPasswordVisible ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setError("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSignup();
+              }}
+              placeholder="Confirm password"
+              className="w-full bg-transparent py-3 text-sm outline-none placeholder:text-[#999]"
+            />
             <button
               type="button"
-              role="switch"
-              aria-checked={twoFaEnabled}
-              onClick={() => setTwoFaEnabled(!twoFaEnabled)}
-              className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
-              style={{ backgroundColor: twoFaEnabled ? GREEN : "#e0e0e0" }}
+              onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+              className="shrink-0 text-[#666]"
+              aria-label={confirmPasswordVisible ? "Hide password" : "Show password"}
             >
-              <span
-                className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all"
-                style={{ left: twoFaEnabled ? "22px" : "2px" }}
-              />
-            </button>
-          </div>
-
-          {/* Remember me / forgot password */}
-          <div className="mb-3 flex items-center justify-between">
-            <label className="flex cursor-pointer items-center gap-2 text-[13px] text-black">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-[#e0e0e0]"
-                style={{ accentColor: GREEN }}
-              />
-              Remember me
-            </label>
-            <button type="button" className="text-[13px] font-medium" style={{ color: GREEN }}>
-              Forgot password?
+              {confirmPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
 
@@ -213,28 +188,28 @@ function Login({ onLoginSuccess }: LoginProps) {
             <div className="mb-3 rounded-lg bg-[#FBEAE8] p-3 text-xs text-[#B42318]">{error}</div>
           )}
 
-          {/* Login button */}
+          {/* Signup button */}
           <button
             type="button"
-            onClick={handleLogin}
+            onClick={handleSignup}
             disabled={!canSubmit || isLoading}
             className="h-12 w-full rounded-lg text-sm font-medium text-white transition-opacity disabled:cursor-not-allowed"
             style={{ backgroundColor: canSubmit && !isLoading ? NAVY : "#e0e0e0" }}
           >
-            {isLoading ? "Logging in..." : "Login"}
+            {isLoading ? "Creating account..." : "Create account"}
           </button>
         </div>
 
-        {/* Sign up */}
+        {/* Back to login */}
         <div className="mt-5 flex items-center gap-1 text-[13px]">
-          <span className="text-black">New to CownIt?</span>
+          <span className="text-black">Already have an account?</span>
           <button
             type="button"
-            onClick={() => setIsSignup(true)}
+            onClick={onBackToLogin}
             className="font-medium"
             style={{ color: GREEN }}
           >
-            Sign up
+            Log in
           </button>
         </div>
       </div>
@@ -242,4 +217,4 @@ function Login({ onLoginSuccess }: LoginProps) {
   );
 }
 
-export default Login;
+export default Signup;
