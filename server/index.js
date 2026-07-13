@@ -127,6 +127,72 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+app.post('/api/auth/signup', async (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({
+      error: 'Name, email, and password are required'
+    });
+  }
+
+  try {
+    // Check if email already exists
+    const existingUser = await dbGet(
+      'SELECT id FROM people WHERE email = ?',
+      [email]
+    );
+
+    if (existingUser) {
+      return res.status(400).json({
+        error: 'Email already in use'
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Generate user ID
+    const userId = `user-${Date.now()}`;
+
+    // Create new user with individual role
+    await dbRun(
+      `INSERT INTO people (id, name, email, password, role, initials, department, mobile, avatarColor, avatarTextColor)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        name,
+        email,
+        hashedPassword,
+        'individual',
+        name.split(' ').map(n => n[0]).join(''),
+        'Operations',
+        '',
+        '#EEEDFE',
+        '#3C3489'
+      ]
+    );
+
+    const token = generateToken(userId, 'individual');
+
+    res.json({
+      token,
+      user: {
+        id: userId,
+        name,
+        email,
+        role: 'individual'
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: 'Signup failed. Please try again.'
+    });
+  }
+});
+
 // People
 app.get('/api/people', verifyToken, async (req, res) => {
   try {
