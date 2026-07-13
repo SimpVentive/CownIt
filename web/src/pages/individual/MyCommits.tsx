@@ -60,12 +60,6 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
     const trimmed = input.trim();
     if (!trimmed) return;
 
-    const levelCommits = userCommits.filter((c) => c.level === level);
-    if (levelCommits.length >= 3) {
-      alert("Maximum 3 commitments per level");
-      return;
-    }
-
     const newCommit: Commit = {
       id: `c-${Date.now()}-${level}`,
       personId: currentUserId,
@@ -128,7 +122,7 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
                   style={count < 3 ? { borderColor: "#d4524f", border: "1px solid" } : {}}
                 >
                   <span>{count}</span>
-                  <span className="text-[#999]">/ 3</span>
+                  {count < 3 && <span className="text-[#999]">/ 3</span>}
                   {count < 3 && <span className="text-lg text-[#d4524f] ml-1">⚠</span>}
                 </div>
               </div>
@@ -183,14 +177,12 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
                   </div>
                 </div>
               ) : (
-                count < 3 && (
-                  <button
-                    onClick={() => setAddingLevel(config.level)}
-                    className="w-full rounded-lg border border-dashed border-[#bbb] py-2.5 text-sm text-[#666] hover:bg-[#f0f0f0]"
-                  >
-                    + Add another commitment
-                  </button>
-                )
+                <button
+                  onClick={() => setAddingLevel(config.level)}
+                  className="w-full rounded-lg border border-dashed border-[#bbb] py-2.5 text-sm text-[#666] hover:bg-[#f0f0f0]"
+                >
+                  + Add another commitment
+                </button>
               )}
             </div>
           );
