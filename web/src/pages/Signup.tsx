@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import * as api from "@/lib/api";
 
 const NAVY = "#0B1F3A";
 const GREEN = "#2E7D32";
@@ -47,10 +48,7 @@ function Signup({ onSignupSuccess, onBackToLogin }: SignupProps) {
 
     setIsLoading(true);
     try {
-      // For now, just show success. Backend signup would go here.
-      console.log("Signup attempt:", { name, email, password });
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await api.signup(name, email, password);
       onSignupSuccess();
     } catch (err) {
       setError((err as Error).message || "Signup failed. Please try again.");

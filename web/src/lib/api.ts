@@ -53,6 +53,19 @@ export async function login(email: string, password: string) {
   return data;
 }
 
+export async function signup(name: string, email: string, password: string) {
+  const data = await apiCall('/api/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify({ name, email, password }),
+  });
+
+  if (data.token) {
+    setAuthToken(data.token);
+  }
+
+  return data;
+}
+
 // People
 export async function getPeople() {
   return apiCall('/api/people');
