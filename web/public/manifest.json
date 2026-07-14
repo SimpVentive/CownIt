@@ -1,13 +1,13 @@
 {
-  "name": "CownIt - Commit & Own It",
+  "name": "CownIt",
   "short_name": "CownIt",
-  "description": "Commit and own your achievements. Track commitments and celebrate impact across your organization.",
+  "description": "Commit & Own It - A progress tracking app",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#0B1F3A",
+  "theme_color": "#001F3F",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -34,13 +34,5 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["business", "productivity"],
-  "screenshots": [
-    {
-      "src": "/icon.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ]
+  "categories": ["business", "productivity"]
 }
