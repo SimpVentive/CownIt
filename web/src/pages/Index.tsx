@@ -6,6 +6,7 @@ import Login from "./Login";
 import TopBar from "@/components/TopBar";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
+import InstallPrompt from "@/components/InstallPrompt";
 import MyCommits from "./individual/MyCommits";
 import LogAchievement from "./individual/LogAchievement";
 import MyImpact from "./individual/MyImpact";
@@ -208,6 +209,7 @@ function Index() {
       </div>
 
       <MobileNav activeRole={session.role} activePage={activePage} onPageChange={setActivePage} />
+      <InstallPrompt />
     </div>
   );
 }
