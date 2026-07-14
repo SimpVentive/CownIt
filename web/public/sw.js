@@ -1,38 +1,28 @@
 const CACHE_NAME = 'cownit-v1';
-const RUNTIME_CACHE = 'cownit-runtime';
-const API_CACHE = 'cownit-api';
 
-const STATIC_ASSETS = [
+const PRECACHE_URLS = [
   '/',
   '/index.html',
-  '/favicon.png',
-  '/icon.png',
-  '/robots.txt',
   '/manifest.json'
 ];
 
-// Install event - cache static assets
+// Install: cache essential files
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {
-        // Ignore failures for non-existent files
-        return Promise.resolve();
-      });
+      return cache.addAll(PRECACHE_URLS).catch(() => Promise.resolve());
     })
   );
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate: clean old caches and claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then((names) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE && cacheName !== API_CACHE) {
-            return caches.delete(cacheName);
-          }
+        names.map((name) => {
+          if (name !== CACHE_NAME) return caches.delete(name);
         })
       );
     })
@@ -40,52 +30,49 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch: network-first for API, cache-first for assets
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
-  if (request.method !== 'GET') {
-    return;
-  }
+  // Only handle GET requests
+  if (request.method !== 'GET') return;
 
-  // API requests: network first, fallback to cache
+  // API calls: try network first
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
           if (response.ok) {
-            const cache = caches.open(API_CACHE);
-            cache.then((c) => c.put(request, response.clone()));
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, response.clone());
+            });
           }
           return response;
         })
         .catch(() => {
           return caches.match(request).then((cached) => {
-            return cached || new Response('Offline - data not available', { status: 503 });
+            return cached || new Response('Offline', { status: 503 });
           });
         })
     );
     return;
   }
 
-  // Static assets & HTML: cache first, fallback to network
+  // Static assets: check cache first
   event.respondWith(
     caches.match(request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
+      if (cached) return cached;
 
       return fetch(request).then((response) => {
-        // Cache successful responses
-        if (response.ok && (request.destination === 'style' || request.destination === 'script' || request.destination === 'document')) {
-          const cache = caches.open(RUNTIME_CACHE);
-          cache.then((c) => c.put(request, response.clone()));
+        if (response.ok) {
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, response.clone());
+          });
         }
         return response;
       }).catch(() => {
-        // Fallback for failed requests
+        // Fallback to cached index.html for navigation
         if (request.destination === 'document') {
           return caches.match('/index.html');
         }
