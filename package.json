@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "cownit",
   "version": "1.0.0",
   "main": "index.ts",
@@ -19,13 +20,15 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "sharp": "^0.35.3",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "process-icons": "node process-icons.js"
   },
   "private": true
 }
