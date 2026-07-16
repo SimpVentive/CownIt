@@ -242,6 +242,62 @@ app.post('/api/commits', verifyToken, async (req, res) => {
   }
 });
 
+app.put('/api/commits/:id', verifyToken, async (req, res) => {
+  const { id } = req.params;
+  const { statement } = req.body;
+
+  try {
+    const result = await dbRun(
+      `UPDATE commits
+       SET statement = ?
+       WHERE id = ?`,
+      [statement, id]
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({
+        error: "Commit not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      id
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+app.delete('/api/commits/:id', verifyToken, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await dbRun(
+      `DELETE FROM commits WHERE id = ?`,
+      [id]
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({
+        error: "Commit not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Commit deleted successfully",
+      id
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
 // Achievements
 app.get('/api/achievements', verifyToken, async (req, res) => {
   try {
