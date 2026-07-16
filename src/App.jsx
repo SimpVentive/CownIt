@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -16,6 +16,9 @@ import {
   fetchMonthlyUpdates,
   fetchMessages,
   fetchHRComments,
+  getSession,
+  setSession,
+  clearSession,
 } from "./services/api";
 
 import TopBar from "./components/TopBar";
@@ -25,9 +28,62 @@ import ContentArea from "./components/ContentArea";
 import Login from "./pages/Login";
 
 export default function App() {
+  const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginError, setLoginError] = useState("");
   const { width } = useWindowDimensions();
+
+  useEffect(() => {
+    restoreSession();
+  }, []);
+
+  const restoreSession = async () => {
+    try {
+      const session = await getSession();
+
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+
+      const [
+        people,
+        commits,
+        achievements,
+        monthlyUpdates,
+        messages,
+        hrComments,
+      ] = await Promise.all([
+        fetchPeople(),
+        fetchCommits(),
+        fetchAchievements(),
+        fetchMonthlyUpdates(),
+        fetchMessages(),
+        fetchHRComments(),
+      ]);
+
+      setState({
+        ...session,
+        selectedPersonId: null,
+        data: {
+          people,
+          commits,
+          achievements,
+          monthlyUpdates,
+          messages,
+          hrComments,
+        },
+      });
+
+      setIsAuthenticated(true);
+    } catch (err) {
+      console.log(err);
+      await clearSession();
+      setToken(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const isTablet = width >= 768;
   const [state, setState] = useState({
@@ -66,13 +122,21 @@ export default function App() {
         fetchMessages(),
         fetchHRComments(),
       ]);
-
-      setState((prev) => ({
-        ...prev,
+      const session = {
         loginRole: data.user.role,
         activeRole: data.user.role,
         activePage: pageMap[data.user.role],
         currentUserId: data.user.id,
+      };
+
+      await setSession(session);
+      setState((prev) => ({
+        ...prev,
+        /*loginRole: data.user.role,
+        activeRole: data.user.role,
+        activePage: pageMap[data.user.role],
+        currentUserId: data.user.id,*/
+        ...session,
         data: {
           people,
           commits,
@@ -89,9 +153,10 @@ export default function App() {
       setLoginError(err?.message || "Login failed")
     }
   };
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await clearSession();
     setToken(null);
+
     setIsAuthenticated(false);
 
     setState({
@@ -100,7 +165,6 @@ export default function App() {
       activePage: null,
       selectedPersonId: null,
       currentUserId: null,
-
       data: {
         people: [],
         commits: [],

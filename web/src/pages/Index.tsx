@@ -26,13 +26,32 @@ const DEFAULT_PAGE: Record<Role, string> = {
 };
 
 function Index() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [activePage, setActivePage] = useState<string>("");
+  const savedSession = api.getSession();
+  const [session, setSession] = useState<Session | null>(savedSession);
+  const [activePage, setActivePage] = useState<string>(
+    savedSession ? DEFAULT_PAGE[savedSession.role] : ""
+  );
+  /*const [session, setSession] = useState<Session | null>(null);
+  const [activePage, setActivePage] = useState<string>("");*/
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [data, setData] = useState<AppData>(initialData());
 
-  const handleLoginSuccess = (role: Role, userId: string, userName: string) => {
+  /* const handleLoginSuccess = (role: Role, userId: string, userName: string) => {
     setSession({ role, loginRole: role, userId, userName });
+    setActivePage(DEFAULT_PAGE[role]);
+    setSelectedPersonId(null);
+  }; */
+  const handleLoginSuccess = (role: Role, userId: string, userName: string) => {
+    const newSession: Session = {
+      role,
+      loginRole: role,
+      userId,
+      userName,
+    };
+
+    setSession(newSession);
+    api.setSession(newSession);
+
     setActivePage(DEFAULT_PAGE[role]);
     setSelectedPersonId(null);
   };
@@ -57,6 +76,7 @@ function Index() {
           achievements,
           messages,
           hrComments,
+          monthlyUpdates: await api.getMonthlyUpdates(),
         });
       } catch (err) {
         console.error('Failed to load data:', err);
@@ -68,6 +88,9 @@ function Index() {
   }, [session]);
 
   const handleLogout = () => {
+    api.clearSession();
+    api.clearAuthToken();
+
     setSession(null);
     setActivePage("");
     setSelectedPersonId(null);
@@ -76,7 +99,14 @@ function Index() {
 
   const handleRoleChange = (newRole: Role) => {
     if (!session) return;
-    setSession({ ...session, role: newRole });
+    //setSession({ ...session, role: newRole });
+    const updatedSession = {
+      ...session,
+      role: newRole,
+    };
+
+    setSession(updatedSession);
+    api.setSession(updatedSession);
     setActivePage(DEFAULT_PAGE[newRole]);
     setSelectedPersonId(null);
   };

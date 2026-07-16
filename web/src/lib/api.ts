@@ -1,6 +1,6 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6001';
 
-let authToken: string | null = null;
+let authToken: string | null = localStorage.getItem("authToken");
 
 export function setAuthToken(token: string) {
   authToken = token;
@@ -22,8 +22,10 @@ const apiCall = async (endpoint: string, options?: RequestInit) => {
     ...((options?.headers as Record<string, string>) || {}),
   };
 
-  if (authToken) {
-    headers['Authorization'] = `Bearer ${authToken}`;
+  const token = getAuthToken();
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   const response = await fetch(`${API_URL}${endpoint}`, {
@@ -83,6 +85,19 @@ export async function createCommit(commit: any) {
   });
 }
 
+export async function updateCommit(id: string, commit: any) {
+  return apiCall(`/api/commits/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(commit),
+  });
+}
+
+export async function deleteCommit(id: string) {
+  return apiCall(`/api/commits/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 // Achievements
 export async function getAchievements() {
   return apiCall('/api/achievements');
@@ -135,4 +150,17 @@ export async function createHrComment(comment: any) {
     method: 'POST',
     body: JSON.stringify(comment),
   });
+}
+
+export function setSession(session: any) {
+  localStorage.setItem("session", JSON.stringify(session));
+}
+
+export function getSession() {
+  const session = localStorage.getItem("session");
+  return session ? JSON.parse(session) : null;
+}
+
+export function clearSession() {
+  localStorage.removeItem("session");
 }

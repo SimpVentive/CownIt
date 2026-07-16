@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AppData, Commit, CommitLevel } from "@/lib/types";
 import { COMMIT_LEVELS, COMMIT_LABELS } from "@/lib/utilsApp";
+import { deleteCommit, updateCommit } from "@/lib/api";
 
 interface MyCommitsProps {
   data: AppData;
@@ -22,7 +23,10 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
   console.log(userCommits);
   const [addingLevel, setAddingLevel] = useState<CommitLevel | null>(null);
   const [input, setInput] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editInput, setEditInput] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+
 
   const levelConfigs: LevelConfig[] = [
     {
@@ -73,8 +77,18 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
     setAddingLevel(null);
   };
 
-  const removeCommitment = (commitId: string) => {
-    onDataChange?.("commits", data.commits.filter((c) => c.id !== commitId));
+  const removeCommitment = async (commitId: string) => {
+    try {
+      await deleteCommit(commitId);
+
+      onDataChange?.(
+        "commits",
+        data.commits.filter((c) => c.id !== commitId)
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete commitment.");
+    }
   };
 
   const handleSave = () => {
@@ -84,6 +98,43 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
     }
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 2500);
+  };
+
+  const startEdit = (commit: Commit) => {
+    setEditingId(commit.id);
+    setEditInput(commit.statement);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditInput("");
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !editInput.trim()) return;
+
+    try {
+      await updateCommit(editingId, {
+        statement: editInput.trim(),
+      });
+
+      const updatedCommits = data.commits.map((c) =>
+        c.id === editingId
+          ? {
+              ...c,
+              statement: editInput.trim(),
+            }
+          : c
+      );
+
+      onDataChange?.("commits", updatedCommits);
+
+      setEditingId(null);
+      setEditInput("");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update commitment.");
+    }
   };
 
   return (
@@ -134,13 +185,57 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
                     key={commit.id}
                     className="flex items-center justify-between rounded-lg border border-[#e0e0e0] bg-white px-3 py-2.5"
                   >
-                    <p className="text-sm text-[#333] flex-1 m-0">{commit.statement}</p>
-                    <button
-                      onClick={() => removeCommitment(commit.id)}
-                      className="text-[#999] hover:text-[#333] font-medium text-lg ml-2"
-                    >
-                      ✕
-                    </button>
+                    {editingId === commit.id ? (
+                      <input
+                        value={editInput}
+                        onChange={(e) => setEditInput(e.target.value)}
+                        className="flex-1 rounded border border-[#d0d0d0] px-2 py-1 text-sm"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveEdit();
+                          if (e.key === "Escape") cancelEdit();
+                        }}
+                      />
+                    ) : (
+                      <p className="text-sm text-[#333] flex-1 m-0">
+                        {commit.statement}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 ml-2">
+                      {editingId === commit.id ? (
+                        <>
+                          <button
+                            onClick={saveEdit}
+                            className="text-green-600 hover:text-green-700 text-sm"
+                          >
+                            Save
+                          </button>
+
+                          <button
+                            onClick={cancelEdit}
+                            className="text-gray-600 hover:text-gray-700 text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startEdit(commit)}
+                            className="text-blue-600 hover:text-blue-700 text-sm"
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            onClick={() => removeCommitment(commit.id)}
+                            className="text-red-600 hover:text-red-700 text-sm"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

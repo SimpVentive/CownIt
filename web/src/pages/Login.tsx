@@ -10,8 +10,9 @@ import {
   Briefcase,
   Check,
 } from "lucide-react";
-import type { Role } from "@/lib/types";
+import type { Role, Session } from "@/lib/types";
 import { login as apiLogin } from "@/lib/api";
+import * as api from "@/lib/api";
 import Signup from "./Signup";
 
 const NAVY = "#0B1F3A";
@@ -28,6 +29,7 @@ const ROLES: { value: Role; label: string; icon: typeof User }[] = [
 ];
 
 function Login({ onLoginSuccess }: LoginProps) {
+  const savedSession = api.getSession();
   const [isSignup, setIsSignup] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -36,6 +38,7 @@ function Login({ onLoginSuccess }: LoginProps) {
   const [rememberMe, setRememberMe] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [session, setSession] = useState(savedSession);
 
   const canSubmit = email.length > 0 && password.length > 0;
 
@@ -55,6 +58,14 @@ function Login({ onLoginSuccess }: LoginProps) {
       const response = await apiLogin(email, password);
       const user = response.user;
       onLoginSuccess(user.role as Role, user.id, user.name);
+      const newSession: Session = {
+            role:user.role,
+            loginRole: user.role,
+            userId: user.id,
+            userName: user.name,
+          };
+          setSession(newSession);
+          api.setSession(newSession);
     } catch (err) {
       setError((err as Error).message || "Login failed. Please try again.");
     } finally {
