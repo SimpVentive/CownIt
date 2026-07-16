@@ -54,7 +54,7 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
   };
 
   const counts = getCounts();
-  const allValid = counts.individual >= 3 && counts.hr >= 3 && counts.ceo >= 3;
+  const allValid = counts.individual >= 5 && counts.hr >= 5 && counts.ceo >= 5;
 
   const handleAdd = (level: CommitLevel) => {
     const trimmed = input.trim();
@@ -79,7 +79,7 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
 
   const handleSave = () => {
     if (!allValid) {
-      alert("Please complete all 3 levels with at least 3 commitments each");
+      alert("Please complete all 5 levels with at least 5 commitments each");
       return;
     }
     setShowSuccess(true);
@@ -90,13 +90,13 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
     <div className="max-w-2xl">
       <h2 className="mb-2 text-xl font-medium">Your commitments</h2>
       <p className="mb-6 text-xs text-[#666]">
-        Set at least 3 commitments at each level. HR will be notified of any changes you make.
+        Set at least 5 commitments at each level. HR will be notified of any changes you make.
       </p>
 
       {/* Validation message */}
       {!allValid && (
         <div className="mb-6 rounded-lg bg-[#fce8e8] p-3 text-xs text-[#d4524f] border border-[#d4524f]">
-          You need at least 3 commitments in each level before saving.
+          You need at least 5 commitments in each level before saving.
         </div>
       )}
 
@@ -122,8 +122,8 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
                   style={count < 3 ? { borderColor: "#d4524f", border: "1px solid" } : {}}
                 >
                   <span>{count}</span>
-                  {count < 3 && <span className="text-[#999]">/ 3</span>}
-                  {count < 3 && <span className="text-lg text-[#d4524f] ml-1">⚠</span>}
+                  {count < 5 && <span className="text-[#999]">/ 5</span>}
+                  {count < 5 && <span className="text-lg text-[#d4524f] ml-1">⚠</span>}
                 </div>
               </div>
 
