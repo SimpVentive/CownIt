@@ -201,7 +201,7 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
                         {commit.statement}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 ml-2">
+                    {/* <div className="flex items-center gap-2 ml-2">
                       {editingId === commit.id ? (
                         <>
                           <button
@@ -235,7 +235,7 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
                           </button>
                         </>
                       )}
-                    </div>
+                    </div> */ }
                   </div>
                 ))}
               </div>
