@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cownit-v1';
+const CACHE_NAME = 'cownit-v2';
 
 const PRECACHE_URLS = [
   '/',
@@ -6,82 +6,183 @@ const PRECACHE_URLS = [
   '/manifest.json'
 ];
 
-// Install: cache essential files
+// Install
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_URLS).catch(() => Promise.resolve());
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .catch(() => Promise.resolve())
   );
+
   self.skipWaiting();
 });
 
-// Activate: clean old caches and claim clients
+// Activate
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((names) => {
-      return Promise.all(
+    caches.keys().then((names) =>
+      Promise.all(
         names.map((name) => {
-          if (name !== CACHE_NAME) return caches.delete(name);
+          if (name !== CACHE_NAME) {
+            return caches.delete(name);
+          }
         })
-      );
-    })
+      )
+    )
   );
+
   self.clients.claim();
 });
 
-// Fetch: network-first for API, cache-first for assets
+// Fetch
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
 
-  // Only handle GET requests
-  if (request.method !== 'GET') return;
+  const request = event.request;
 
-  // API calls: try network first
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            // Clone before using response
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match(request).then((cached) => {
-            return cached || new Response('Offline', { status: 503 });
-          });
-        })
-    );
+  // Only GET requests
+  if (request.method !== 'GET') {
     return;
   }
 
-  // Static assets: check cache first
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
+  // Ignore browser extensions
+  if (!request.url.startsWith('http')) {
+    return;
+  }
 
-      return fetch(request).then((response) => {
-        if (response.ok) {
-          // Clone before using response
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
+  const url = new URL(request.url);
+
+  // Ignore Vite development files
+  if (
+    url.pathname.startsWith('/@vite') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.includes('__vite') ||
+    url.pathname.includes('hot-update')
+  ) {
+    return;
+  }
+
+  // ==========================
+  // API - Network First
+  // ==========================
+  if (url.pathname.startsWith('/api/')) {
+
+    event.respondWith(
+
+      fetch(request)
+        .then((response) => {
+
+          if (
+            response.ok &&
+            response.type === 'basic'
+          ) {
+
+            const clone = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then((cache) => cache.put(request, clone));
+
+          }
+
+          return response;
+
+        })
+        .catch(async () => {
+
+          const cached = await caches.match(request);
+
+          return cached || new Response(
+            JSON.stringify({
+              error: 'Offline'
+            }),
+            {
+              status: 503,
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+        })
+
+    );
+
+    return;
+
+  }
+
+  // ==========================
+  // HTML - Network First
+  // ==========================
+  if (request.mode === 'navigate') {
+
+    event.respondWith(
+
+      fetch(request)
+        .then((response) => {
+
+          if (
+            response.ok &&
+            response.type === 'basic'
+          ) {
+
+            const clone = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then((cache) => cache.put(request, clone));
+
+          }
+
+          return response;
+
+        })
+        .catch(async () => {
+
+          return (
+            await caches.match(request) ||
+            await caches.match('/index.html')
+          );
+
+        })
+
+    );
+
+    return;
+
+  }
+
+  // ==========================
+  // Static Assets - Cache First
+  // ==========================
+  event.respondWith(
+
+    caches.match(request)
+      .then((cached) => {
+
+        if (cached) {
+          return cached;
+        }
+
+        return fetch(request)
+          .then((response) => {
+
+            if (
+              response.ok &&
+              response.type === 'basic'
+            ) {
+
+              const clone = response.clone();
+
+              caches.open(CACHE_NAME)
+                .then((cache) => cache.put(request, clone));
+
+            }
+
+            return response;
+
           });
-        }
-        return response;
-      }).catch(() => {
-        // Fallback to cached index.html for navigation
-        if (request.destination === 'document') {
-          return caches.match('/index.html');
-        }
-        return new Response('Offline', { status: 503 });
-      });
-    })
+
+      })
+
   );
+
 });

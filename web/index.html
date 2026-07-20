@@ -3,43 +3,76 @@
   <head>
     <!-- Character Encoding & Viewport -->
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
 
     <!-- Page Metadata -->
     <title>CownIt — Commit & Own It</title>
-    <meta name="description" content="Commit & Own It - A progress tracking app. Log commitments, track achievements, and measure impact." />
+    <meta
+      name="description"
+      content="Commit & Own It - A progress tracking app. Log commitments, track achievements, and measure impact."
+    />
     <meta name="color-scheme" content="light dark" />
 
-    <!-- Open Graph Tags -->
+    <!-- Open Graph -->
     <meta property="og:title" content="CownIt" />
-    <meta property="og:description" content="Commit & Own It - A progress tracking app" />
+    <meta
+      property="og:description"
+      content="Commit & Own It - A progress tracking app"
+    />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://cownit.l-kurve.com" />
 
-    <!-- PWA Configuration -->
+    <!-- PWA -->
     <meta name="theme-color" content="#001F3F" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <meta name="apple-mobile-web-app-title" content="CownIt" />
 
-    <!-- Icons & Manifest -->
-    <link rel="icon" type="image/png" href="/icons/icon-192x192.png" sizes="192x192" />
-    <link rel="icon" type="image/png" href="/icons/icon-512x512.png" sizes="512x512" />
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <!-- Icons -->
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/icons/icon-192x192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="/icons/icon-512x512.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="/icons/icon-192x192.png"
+    />
+
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json" />
   </head>
 
   <body>
     <div id="root"></div>
+
+    <!-- React Entry -->
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').then(() => {
-          console.log('Service Worker registered');
-        }).catch((error) => {
-          console.log('Service Worker registration failed:', error);
+    <script type="module">
+      // Register Service Worker only in Production
+      if (import.meta.env.PROD && "serviceWorker" in navigator) {
+        window.addEventListener("load", async () => {
+          try {
+            const registration = await navigator.serviceWorker.register("/sw.js");
+            console.log("✅ Service Worker registered:", registration.scope);
+          } catch (err) {
+            console.error("❌ Service Worker registration failed:", err);
+          }
         });
       }
     </script>
