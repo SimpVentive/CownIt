@@ -244,7 +244,7 @@ function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementPro
                   </div>
                 </div>
 
-                <label className="mb-2 block text-xs font-medium text-[#333]">Why is this the impact?</label>
+                <label className="mb-2 block text-xs font-medium text-[#333]">What is the expected impact?</label>
                 <textarea
                   value={data.why}
                   onChange={(e) => updateDimensionData(dim, "why", e.target.value)}
