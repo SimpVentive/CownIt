@@ -201,7 +201,7 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
                         {commit.statement}
                       </p>
                     )}
-                    {/* <div className="flex items-center gap-2 ml-2">
+                    <div className="flex items-center gap-2 ml-2">
                       {editingId === commit.id ? (
                         <>
                           <button
@@ -227,15 +227,15 @@ function MyCommits({ data, currentUserId, onDataChange }: MyCommitsProps) {
                             Edit
                           </button>
 
-                          <button
+                          {/* <button
                             onClick={() => removeCommitment(commit.id)}
                             className="text-red-600 hover:text-red-700 text-sm"
                           >
                             Delete
-                          </button>
+                          </button> */}
                         </>
                       )}
-                    </div> */ }
+                    </div>
                   </div>
                 ))}
               </div>
