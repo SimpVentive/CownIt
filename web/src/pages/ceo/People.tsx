@@ -1,6 +1,7 @@
 import { useState } from "react";
-import type { AppData } from "@/lib/types";
-import { computeHealthScore, formatDate } from "@/lib/utilsApp";
+import type { AppData, Attachment, Dim } from "@/lib/types";
+import { CPQSDP_DIMS, computeHealthScore, formatDate } from "@/lib/utilsApp";
+import * as api from "@/lib/api";
 
 interface CeoPeopleProps {
   data: AppData;
@@ -166,23 +167,73 @@ function CeoPeople({ data }: CeoPeopleProps) {
             </div>
             <div className="p-6 space-y-3">
               {personAchievements.length > 0 ? (
-                personAchievements.map((achievement) => (
-                  <div key={achievement.id} className="rounded-lg border border-[#e0e0e0] bg-[#f9f9f9] p-4">
-                    <div className="mb-1 text-sm font-medium text-[#222]">
-                      {achievement.title}
+                personAchievements.map((achievement) => {
+                  const commitment = commits.find((commit) => commit.id === achievement.commitId);
+                  const attachments = Object.entries(achievement.fileAttachments || {}) as [Dim, Attachment | string][];
+                  return (
+                    <div key={achievement.id} className="rounded-lg border border-[#e0e0e0] bg-[#f9f9f9] p-4">
+                      <div className="mb-1 text-sm font-medium text-[#222]">
+                        {achievement.title}
+                      </div>
+                      {achievement.dimensionDetails ? (
+                        <div className="mb-2 flex flex-col gap-2 text-xs text-[#666]">
+                          {achievement.cpqsdp.map((dim) => {
+                            const details = achievement.dimensionDetails?.[dim];
+                            if (!details) return null;
+                            return (
+                              <div key={dim}>
+                                <div className="font-medium">
+                                  {CPQSDP_DIMS.find((item) => item.key === dim)?.label || dim}: {details.title} · {details.rating}/10
+                                </div>
+                                <div className="leading-relaxed">{details.notes}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="mb-2 text-xs text-[#666] leading-relaxed">
+                          {achievement.evidence}
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-2 text-xs text-[#999]">
+                        <span>{formatDate(achievement.date)}</span>
+                        <span>•</span>
+                        <span>Impact: {achievement.impactRating}/10</span>
+                        <span>•</span>
+                        <span>{achievement.cpqsdp.join(", ")}</span>
+                      </div>
+                      {commitment && (
+                        <div className="mt-2 text-xs text-[#666]">
+                          <span className="font-medium">Commitment:</span> {commitment.statement}
+                        </div>
+                      )}
+                      {attachments.length > 0 ? (
+                        <div className="mt-2 flex flex-col gap-1 text-xs">
+                          {attachments.map(([dim, attachment]) => typeof attachment === "string" ? (
+                            <span key={dim} className="text-[#999]">{dim} attachment: {attachment}</span>
+                          ) : (
+                            <button
+                              key={dim}
+                              type="button"
+                              className="w-fit text-[#1f77d4] underline"
+                              onClick={() => api.downloadAttachment(attachment).catch((err) => console.error("Failed to download attachment:", err))}
+                            >
+                              Download {CPQSDP_DIMS.find((item) => item.key === dim)?.label || dim}: {attachment.name}
+                            </button>
+                          ))}
+                        </div>
+                      ) : achievement.fileAttachment && typeof achievement.fileAttachment !== "string" ? (
+                        <button
+                          type="button"
+                          className="mt-2 w-fit text-xs text-[#1f77d4] underline"
+                          onClick={() => api.downloadAttachment(achievement.fileAttachment as Attachment).catch((err) => console.error("Failed to download attachment:", err))}
+                        >
+                          Download: {achievement.fileAttachment.name}
+                        </button>
+                      ) : null}
                     </div>
-                    <div className="mb-2 text-xs text-[#666] leading-relaxed">
-                      {achievement.evidence}
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-[#999]">
-                      <span>{formatDate(achievement.date)}</span>
-                      <span>•</span>
-                      <span>Impact: {achievement.impactRating}/10</span>
-                      <span>•</span>
-                      <span>{achievement.cpqsdp.join(", ")}</span>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="text-center py-8 text-[#999]">No achievements yet</div>
               )}

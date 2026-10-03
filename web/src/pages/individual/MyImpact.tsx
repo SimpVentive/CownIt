@@ -1,5 +1,6 @@
-import type { AppData } from "@/lib/types";
-import { CPQSDP_COLORS, formatDate } from "@/lib/utilsApp";
+import type { AppData, Attachment, Dim } from "@/lib/types";
+import { CPQSDP_COLORS, CPQSDP_DIMS, formatDate } from "@/lib/utilsApp";
+import * as api from "@/lib/api";
 
 interface MyImpactProps {
   data: AppData;
@@ -51,6 +52,8 @@ function MyImpact({ data, currentUserId }: MyImpactProps) {
             const comments = data.hrComments.filter(
               (c) => c.achievementId === achievement.id
             );
+            const commit = data.commits.find((item) => item.id === achievement.commitId);
+            const attachments = Object.entries(achievement.fileAttachments || {}) as [Dim, Attachment | string][];
 
             return (
               <div key={achievement.id} className="rounded-xl border border-[#e0e0e0] bg-white p-4">
@@ -73,15 +76,66 @@ function MyImpact({ data, currentUserId }: MyImpactProps) {
                   <span>Impact: {achievement.impactRating}/10</span>
                 </div>
 
-                <div className="mb-3 text-xs leading-relaxed text-[#666]">
-                  {achievement.evidence}
-                </div>
-
-                {achievement.fileAttachment && (
-                  <div className="mb-3 text-xs text-[#999]">
-                    Attachment: {achievement.fileAttachment}
+                {achievement.dimensionDetails ? (
+                  <div className="mb-3 flex flex-col gap-2 text-xs text-[#666]">
+                    {achievement.cpqsdp.map((dim) => {
+                      const details = achievement.dimensionDetails?.[dim];
+                      if (!details) return null;
+                      return (
+                        <div key={dim}>
+                          <div className="font-medium">
+                            {CPQSDP_DIMS.find((item) => item.key === dim)?.label || dim}: {details.title} · {details.rating}/10
+                          </div>
+                          <div className="leading-relaxed">{details.notes}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="mb-3 text-xs leading-relaxed text-[#666]">
+                    {achievement.evidence}
                   </div>
                 )}
+
+                {commit && (
+                  <div className="mb-3 text-xs text-[#666]">
+                    <span className="font-medium">Commitment:</span> {commit.statement}
+                  </div>
+                )}
+
+                {attachments.length > 0 ? (
+                  <div className="mb-3 text-xs text-[#999]">
+                    {attachments.map(([dim, attachment]) => (
+                      <div key={dim}>
+                        {typeof attachment === "string" ? (
+                          <span>{dim} attachment: {attachment}</span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="text-[#1f77d4] underline"
+                            onClick={() => api.downloadAttachment(attachment).catch((err) => console.error("Failed to download attachment:", err))}
+                          >
+                            Download {CPQSDP_DIMS.find((item) => item.key === dim)?.label || dim}: {attachment.name}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : achievement.fileAttachment ? (
+                  <div className="mb-3 text-xs text-[#999]">
+                    {typeof achievement.fileAttachment === "string" ? (
+                      <>Attachment: {achievement.fileAttachment}</>
+                    ) : (
+                      <button
+                        type="button"
+                        className="text-[#1f77d4] underline"
+                        onClick={() => api.downloadAttachment(achievement.fileAttachment as Attachment).catch((err) => console.error("Failed to download attachment:", err))}
+                      >
+                        Download: {achievement.fileAttachment.name}
+                      </button>
+                    )}
+                  </div>
+                ) : null}
 
                 {comments.length > 0 && (
                   <div className="border-t border-[#e0e0e0] pt-3">

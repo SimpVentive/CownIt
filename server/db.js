@@ -95,9 +95,24 @@ export async function initDb() {
         impactRating INTEGER NOT NULL,
         date DATETIME NOT NULL,
         fileAttachment TEXT,
+        dimensionDetails TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (personId) REFERENCES people(id),
         FOREIGN KEY (commitId) REFERENCES commits(id)
+      )
+    `)
+
+    const dimensionDetailsColumn = await dbGet("SHOW COLUMNS FROM achievements LIKE 'dimensionDetails'")
+    if (!dimensionDetailsColumn) {
+      await dbRun('ALTER TABLE achievements ADD COLUMN dimensionDetails TEXT NULL')
+    }
+
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS achievementDrafts (
+        personId VARCHAR(255) PRIMARY KEY,
+        draftData LONGTEXT NOT NULL,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (personId) REFERENCES people(id)
       )
     `)
 

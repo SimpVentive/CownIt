@@ -1,6 +1,7 @@
-import { useState } from "react";
-import type { AppData, Achievement, CommitLevel, Dim } from "@/lib/types";
+import { useEffect, useState } from "react";
+import type { AppData, Achievement, AchievementDraft, Attachment, CommitLevel, Dim } from "@/lib/types";
 import { COMMIT_LEVELS, COMMIT_LABELS, CPQSDP_DIMS } from "@/lib/utilsApp";
+import * as api from "@/lib/api";
 
 interface LogAchievementProps {
   data: AppData;
@@ -10,9 +11,10 @@ interface LogAchievementProps {
 
 interface DimensionData {
   rating: number;
-  why: string;
-  evidence: string;
-  file: string | null;
+  title: string;
+  notes: string;
+  file: File | null;
+  attachment: Attachment | string | null;
 }
 
 function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementProps) {
@@ -24,12 +26,33 @@ function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementPro
   const [showModal, setShowModal] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    api.getAchievementDraft().then((draft) => {
+      if (!draft) return;
+      setSelectedLevel(draft.selectedLevel);
+      setSelectedCommitId(draft.selectedCommitId);
+      setTitle(draft.title);
+      setSelectedDims(draft.selectedDims || []);
+      setDimensionData(Object.fromEntries(
+        Object.entries(draft.dimensionData).map(([dim, value]) => [dim, {
+          rating: value?.rating ?? 5,
+          title: value?.title ?? "",
+          notes: value?.notes ?? "",
+          file: null,
+          attachment: value?.attachment ?? null,
+        }])
+      ) as Record<Dim, DimensionData>);
+    }).catch((err) => console.error("Failed to load achievement draft:", err));
+  }, []);
 
   const userCommits = data.commits.filter((c) => c.personId === currentUserId);
   const levelCommits = selectedLevel ? userCommits.filter((c) => c.level === selectedLevel) : [];
   const selectedCommit = selectedCommitId ? userCommits.find((c) => c.id === selectedCommitId) : null;
 
-  const updateDimensionData = (dim: Dim, field: keyof DimensionData, value: any) => {
+  const updateDimensionData = <K extends keyof DimensionData>(dim: Dim, field: K, value: DimensionData[K]) => {
     setDimensionData((prev) => ({
       ...prev,
       [dim]: { ...prev[dim], [field]: value },
@@ -48,7 +71,7 @@ function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementPro
     if (!selectedDims.includes(dim)) {
       setDimensionData((prev) => ({
         ...prev,
-        [dim]: { rating: 5, why: "", evidence: "", file: null },
+        [dim]: { rating: 5, title: "", notes: "", file: null, attachment: null },
       }));
     }
   };
@@ -59,50 +82,111 @@ function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementPro
     }
     for (const dim of selectedDims) {
       const data = dimensionData[dim];
-      if (!data || !data.why.trim() || !data.evidence.trim()) {
+      if (!data || !data.title.trim() || !data.notes.trim()) {
         return false;
       }
     }
     return true;
   };
 
-  const saveDraft = () => {
+  const saveDraft = async () => {
     if (!selectedLevel || !selectedCommitId || !title.trim()) {
       alert("Please fill in: commitment level, select a commitment, and achievement title");
       return;
     }
-    setSuccessMsg("Draft saved");
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 2500);
+    setIsSaving(true);
+    setErrorMsg("");
+    try {
+      const attachments = Object.fromEntries(
+        selectedDims
+          .filter((dim) => Boolean(dimensionData[dim]?.file))
+          .map((dim) => [dim, dimensionData[dim].file as File])
+      ) as Partial<Record<Dim, File>>;
+      const draft: AchievementDraft = {
+        selectedLevel,
+        selectedCommitId,
+        title,
+        selectedDims,
+        dimensionData: Object.fromEntries(
+          selectedDims.map((dim) => [dim, {
+            rating: dimensionData[dim].rating,
+            title: dimensionData[dim].title,
+            notes: dimensionData[dim].notes,
+            attachment: dimensionData[dim].attachment,
+          }])
+        ),
+      };
+      const savedDraft = await api.saveAchievementDraft(draft, attachments);
+      setDimensionData(Object.fromEntries(
+        Object.entries(savedDraft.dimensionData).map(([dim, value]) => [dim, {
+          rating: value?.rating ?? 5,
+          title: value?.title ?? "",
+          notes: value?.notes ?? "",
+          file: null,
+          attachment: value?.attachment ?? null,
+        }])
+      ) as Record<Dim, DimensionData>);
+      setSuccessMsg("Draft saved");
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 2500);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to save draft");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const submitAchievement = () => {
+  const submitAchievement = async () => {
     if (!validateForm()) {
       alert("Please complete all required fields");
       return;
     }
 
+    setIsSaving(true);
+    setErrorMsg("");
+    const attachments = Object.fromEntries(
+      selectedDims
+        .filter((dim) => Boolean(dimensionData[dim]?.file))
+        .map((dim) => [dim, dimensionData[dim].file as File])
+    ) as Partial<Record<Dim, File>>;
     const newAchievement: Achievement = {
       id: "a" + Date.now(),
       personId: currentUserId,
       commitId: selectedCommitId,
       title: title.trim(),
-      evidence: Object.values(dimensionData)
-        .map((d) => d.evidence)
-        .join("\n"),
+      evidence: selectedDims.map((dim) => dimensionData[dim]?.notes || "").join("\n"),
       cpqsdp: selectedDims,
       impactRating: Math.round(
         selectedDims.reduce((sum, dim) => sum + (dimensionData[dim]?.rating || 0), 0) / selectedDims.length
       ),
       date: new Date().toISOString(),
-      fileAttachment: Object.values(dimensionData).find((d) => d.file)?.file || null,
+      dimensionDetails: Object.fromEntries(selectedDims.map((dim) => [dim, {
+        title: dimensionData[dim].title,
+        notes: dimensionData[dim].notes,
+        rating: dimensionData[dim].rating,
+      }])),
+      fileAttachments: Object.fromEntries(
+        selectedDims
+          .filter((dim) => dimensionData[dim]?.attachment)
+          .map((dim) => [dim, dimensionData[dim].attachment!])
+      ),
     };
 
-    onDataChange("achievements", [...data.achievements, newAchievement]);
-    setSuccessMsg("Achievement submitted");
-    setShowSuccess(true);
-    resetForm();
-    setTimeout(() => setShowSuccess(false), 2500);
+    try {
+      const result = await api.createAchievement({ ...newAchievement, attachments });
+      onDataChange("achievements", [...data.achievements, {
+        ...newAchievement,
+        fileAttachments: result.fileAttachments ?? newAchievement.fileAttachments,
+      }]);
+      setSuccessMsg("Achievement submitted");
+      setShowSuccess(true);
+      resetForm();
+      setTimeout(() => setShowSuccess(false), 2500);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to submit achievement");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const resetForm = () => {
@@ -213,7 +297,7 @@ function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementPro
           {/* Per-Dimension Cards */}
           {selectedDims.map((dim) => {
             const dimLabel = CPQSDP_DIMS.find((d) => d.key === dim);
-            const data = dimensionData[dim] || { rating: 5, why: "", evidence: "", file: null };
+            const data = dimensionData[dim] || { rating: 5, title: "", notes: "", file: null, attachment: null };
             return (
               <div key={dim} className="mb-3 rounded-lg border border-[#fde7a0] bg-white p-3">
                 <div className="mb-3 flex items-center justify-between border-b border-[#f0e0a0] pb-2">
@@ -244,20 +328,20 @@ function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementPro
                   </div>
                 </div>
 
-                <label className="mb-2 block text-xs font-medium text-[#333]">What is the expected impact?</label>
-                <textarea
-                  value={data.why}
-                  onChange={(e) => updateDimensionData(dim, "why", e.target.value)}
-                  placeholder="e.g., 'Saved 20 hrs/week...'"
-                  className="mb-2 w-full resize-none rounded-lg border border-[#ddd] px-2.5 py-2 text-xs outline-none focus:border-[#1f77d4]"
-                  style={{ minHeight: "60px" }}
+                <label className="mb-2 block text-xs font-medium text-[#333]">Dimension title</label>
+                <input
+                  type="text"
+                  value={data.title}
+                  onChange={(e) => updateDimensionData(dim, "title", e.target.value)}
+                  placeholder="Short title for this dimension"
+                  className="mb-3 w-full rounded-lg border border-[#ddd] px-2.5 py-2 text-xs outline-none focus:border-[#1f77d4]"
                 />
 
-                <label className="mb-2 block text-xs font-medium text-[#333]">Evidence / notes</label>
+                <label className="mb-2 block text-xs font-medium text-[#333]">Notes</label>
                 <textarea
-                  value={data.evidence}
-                  onChange={(e) => updateDimensionData(dim, "evidence", e.target.value)}
-                  placeholder="e.g., 'Finance report, CFO approval'"
+                  value={data.notes}
+                  onChange={(e) => updateDimensionData(dim, "notes", e.target.value)}
+                  placeholder="Describe the outcome or add supporting notes"
                   className="mb-2 w-full resize-none rounded-lg border border-[#ddd] px-2.5 py-2 text-xs outline-none focus:border-[#1f77d4]"
                   style={{ minHeight: "60px" }}
                 />
@@ -265,9 +349,17 @@ function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementPro
                 <label className="mb-1 block text-xs font-medium text-[#333]">Attach supporting document (optional)</label>
                 <input
                   type="file"
-                  onChange={(e) => updateDimensionData(dim, "file", e.target.files?.[0]?.name || null)}
+                  onChange={(e) => {
+                    updateDimensionData(dim, "file", e.target.files?.[0] || null);
+                    updateDimensionData(dim, "attachment", null);
+                  }}
                   className="w-full text-xs"
                 />
+                {(data.file || data.attachment) && (
+                  <p className="mt-1 text-xs text-[#666]">
+                    Attached: {data.file?.name || (typeof data.attachment === "string" ? data.attachment : data.attachment?.name)}
+                  </p>
+                )}
               </div>
             );
           })}
@@ -285,13 +377,14 @@ function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementPro
           <div className="flex gap-3">
             <button
               onClick={saveDraft}
+              disabled={isSaving}
               className="flex-1 rounded-lg border border-[#d0d0d0] bg-[#f0f0f0] px-4 py-3 text-sm font-medium text-[#333] hover:bg-[#e0e0e0]"
             >
-              💾 Save draft
+              {isSaving ? "Saving..." : "💾 Save draft"}
             </button>
             <button
               onClick={submitAchievement}
-              disabled={!validateForm()}
+              disabled={!validateForm() || isSaving}
               className="flex-1 rounded-lg bg-[#1f77d4] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
             >
               ✓ Submit
@@ -335,6 +428,8 @@ function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementPro
           <div className="w-full max-w-md rounded-lg bg-white shadow-lg">
             <div className="border-b px-6 py-4 flex items-center justify-between sticky top-0 bg-white">
               <div>
+
+              {errorMsg && <p role="alert" className="mb-4 text-sm text-red-700">{errorMsg}</p>}
                 <h3 className="font-medium text-[#222]">Your commitments</h3>
                 <p className="text-xs text-[#999] mt-1">{COMMIT_LABELS[selectedLevel!]}</p>
               </div>

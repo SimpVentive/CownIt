@@ -35,5 +35,6 @@ dist/
 # Rork
 .rork/
 .env
+server/uploads/
 rork-eslint.config.js
 app/src/main/java/**/Config.kt

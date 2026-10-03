@@ -1,3 +1,5 @@
+import type { Achievement, AchievementDraft, Dim } from './types';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6001';
 
 let authToken: string | null = localStorage.getItem("authToken");
@@ -17,8 +19,9 @@ export function clearAuthToken() {
 }
 
 const apiCall = async (endpoint: string, options?: RequestInit) => {
+  const isFormData = options?.body instanceof FormData;
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    ...(!isFormData ? { 'Content-Type': 'application/json' } : {}),
     ...((options?.headers as Record<string, string>) || {}),
   };
 
@@ -103,11 +106,42 @@ export async function getAchievements() {
   return apiCall('/api/achievements');
 }
 
-export async function createAchievement(achievement: any) {
+export async function createAchievement(achievement: Achievement & { attachments?: Partial<Record<Dim, File>> }) {
+  const { attachments, ...data } = achievement;
+  const body = new FormData();
+  body.append('achievement', JSON.stringify(data));
+  Object.entries(attachments || {}).forEach(([dimension, file]) => {
+    if (file instanceof File) body.append(dimension, file);
+  });
   return apiCall('/api/achievements', {
     method: 'POST',
-    body: JSON.stringify(achievement),
+    body,
   });
+}
+
+export async function getAchievementDraft(): Promise<AchievementDraft | null> {
+  return apiCall('/api/achievements/draft');
+}
+
+export async function saveAchievementDraft(draft: AchievementDraft, attachments: Partial<Record<Dim, File>>): Promise<AchievementDraft> {
+  const body = new FormData();
+  body.append('draft', JSON.stringify(draft));
+  Object.entries(attachments).forEach(([dimension, file]) => body.append(dimension, file));
+  return apiCall('/api/achievements/draft', { method: 'PUT', body });
+}
+
+export async function downloadAttachment(attachment: { filename: string; name: string }) {
+  const headers: HeadersInit = {};
+  const token = getAuthToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${API_URL}/api/uploads/${encodeURIComponent(attachment.filename)}`, { headers });
+  if (!response.ok) throw new Error('Failed to download attachment');
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = attachment.name;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 // Monthly Updates

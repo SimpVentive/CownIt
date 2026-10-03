@@ -128,14 +128,6 @@ function Index() {
       newItems.forEach((item) => {
         api.createCommit(item).catch((err) => console.error('Failed to save commit:', err));
       });
-    } else if (entity === "achievements") {
-      const oldArray = data.achievements;
-      const newItems = (newArray as any[]).filter(
-        (item) => !oldArray.some((old) => old.id === item.id)
-      );
-      newItems.forEach((item) => {
-        api.createAchievement(item).catch((err) => console.error('Failed to save achievement:', err));
-      });
     } else if (entity === "messages") {
       const oldArray = data.messages;
       const newItems = (newArray as any[]).filter(

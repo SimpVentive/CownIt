@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import type { AppData, Dim } from "@/lib/types";
+import type { AppData, Attachment, Dim } from "@/lib/types";
 import { CPQSDP_DIMS, formatDate } from "@/lib/utilsApp";
+import * as api from "@/lib/api";
 
 interface DashboardProps {
   data: AppData;
@@ -42,7 +43,10 @@ function Dashboard({ data }: DashboardProps) {
     const withDim = data.achievements.filter((a) => a.cpqsdp.includes(dim));
     if (withDim.length === 0) return null;
     return (
-      withDim.reduce((sum, a) => sum + a.impactRating, 0) / withDim.length
+      withDim.reduce(
+        (sum, achievement) => sum + (achievement.dimensionDetails?.[dim]?.rating ?? achievement.impactRating),
+        0
+      ) / withDim.length
     );
   };
 
@@ -354,6 +358,8 @@ function Dashboard({ data }: DashboardProps) {
           {recentAchievements.length > 0 ? (
             recentAchievements.map((a, idx) => {
               const person = data.people.find((p) => p.id === a.personId);
+              const commitment = data.commits.find((commit) => commit.id === a.commitId);
+              const attachments = Object.entries(a.fileAttachments || {}) as [Dim, Attachment | string][];
               const dc = deptColor[person?.department || "Operations"] || { bg: "#F5F5F5", fg: "#666" };
               const band = a.impactRating >= 9 ? "gold" : a.impactRating >= 7 ? "green" : "amber";
               const bandColor =
@@ -401,6 +407,52 @@ function Dashboard({ data }: DashboardProps) {
                         {person?.department}
                       </span>
                     </div>
+                    {commitment && (
+                      <div style={{ fontSize: "12px", color: "#4B5158", marginTop: "6px" }}>
+                        <b>Commitment:</b> {commitment.statement}
+                      </div>
+                    )}
+                    {a.dimensionDetails ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "8px", fontSize: "12px", color: "#4B5158" }}>
+                        {a.cpqsdp.map((dim) => {
+                          const details = a.dimensionDetails?.[dim];
+                          if (!details) return null;
+                          return (
+                            <div key={dim}>
+                              <b>{CPQSDP_DIMS.find((item) => item.key === dim)?.label || dim}: {details.title} · {details.rating}/10</b>
+                              <div>{details.notes}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: "6px", fontSize: "12px", color: "#4B5158" }}>{a.evidence}</div>
+                    )}
+                    {attachments.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "8px", fontSize: "12px" }}>
+                        {attachments.map(([dim, attachment]) => typeof attachment === "string" ? (
+                          <span key={dim} style={{ color: "#4B5158" }}>{dim}: {attachment}</span>
+                        ) : (
+                          <button
+                            key={dim}
+                            type="button"
+                            style={{ padding: 0, border: 0, background: "none", color: "#185FA5", textDecoration: "underline", cursor: "pointer" }}
+                            onClick={() => api.downloadAttachment(attachment).catch((err) => console.error("Failed to download attachment:", err))}
+                          >
+                            Download {CPQSDP_DIMS.find((item) => item.key === dim)?.label || dim}: {attachment.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {attachments.length === 0 && a.fileAttachment && typeof a.fileAttachment !== "string" && (
+                      <button
+                        type="button"
+                        style={{ padding: 0, marginTop: "8px", border: 0, background: "none", color: "#185FA5", textDecoration: "underline", cursor: "pointer", fontSize: "12px" }}
+                        onClick={() => api.downloadAttachment(a.fileAttachment as Attachment).catch((err) => console.error("Failed to download attachment:", err))}
+                      >
+                        Download: {a.fileAttachment.name}
+                      </button>
+                    )}
                   </div>
                   <div
                     style={{

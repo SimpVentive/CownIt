@@ -29,7 +29,31 @@ export interface Achievement {
   cpqsdp: Dim[];
   impactRating: number;
   date: string;
-  fileAttachment: string | null;
+  fileAttachment?: Attachment | string | null;
+  fileAttachments?: Partial<Record<Dim, Attachment | string>>;
+  dimensionDetails?: Partial<Record<Dim, {
+    title: string;
+    notes: string;
+    rating: number;
+  }>>;
+}
+
+export interface Attachment {
+  filename: string;
+  name: string;
+}
+
+export interface AchievementDraft {
+  selectedLevel: CommitLevel | null;
+  selectedCommitId: string;
+  title: string;
+  selectedDims: Dim[];
+  dimensionData: Partial<Record<Dim, {
+    rating: number;
+    title: string;
+    notes: string;
+    attachment?: Attachment | string | null;
+  }>>;
 }
 
 export interface MonthlyUpdate {

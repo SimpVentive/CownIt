@@ -1,5 +1,7 @@
-import { useState } from "react";
-import type { AppData, Dim } from "@/lib/types";
+import { Fragment, useState } from "react";
+import type { Achievement, AppData, Attachment, Dim } from "@/lib/types";
+import { CPQSDP_DIMS } from "@/lib/utilsApp";
+import * as api from "@/lib/api";
 
 interface HeatmapProps {
   data: AppData;
@@ -10,6 +12,8 @@ interface DetailEntry {
   action: string;
   owner: string;
   due: string;
+  dimension: Dim;
+  achievements: Achievement[];
 }
 
 function Heatmap({ data }: HeatmapProps) {
@@ -40,11 +44,14 @@ function Heatmap({ data }: HeatmapProps) {
       const dimAchievements = personAchievements.filter((a) => a.cpqsdp.includes(dim.k));
       if (dimAchievements.length > 0) {
         scores[dim.k] =
-          dimAchievements.reduce((sum, a) => sum + a.impactRating, 0) / dimAchievements.length;
+          dimAchievements.reduce(
+            (sum, achievement) => sum + (achievement.dimensionDetails?.[dim.k]?.rating ?? achievement.impactRating),
+            0
+          ) / dimAchievements.length;
       }
     });
 
-    return { name: person.name, scores };
+    return { id: person.id, name: person.name, scores };
   });
 
   // Calculate org average
@@ -83,6 +90,10 @@ function Heatmap({ data }: HeatmapProps) {
             action: `Review achievement details and provide feedback to ${person.name}.`,
             owner: person.name,
             due: "—",
+            dimension: dim.k,
+            achievements: data.achievements.filter((achievement) =>
+              achievement.personId === person.id && achievement.cpqsdp.includes(dim.k)
+            ),
           };
         }
       });
@@ -98,6 +109,8 @@ function Heatmap({ data }: HeatmapProps) {
           action: `Send a reminder to the ${personScores.length - scoredCount} team members who haven't reported yet.`,
           owner: "You",
           due: "Jul 11",
+          dimension: dim.k,
+          achievements: [],
         };
       }
     });
@@ -158,7 +171,7 @@ function Heatmap({ data }: HeatmapProps) {
 
           {/* Person rows */}
           {personScores.map((person) => (
-            <div key={person.name}>
+            <Fragment key={person.id}>
               <div
                 style={{
                   fontSize: "13px",
@@ -226,24 +239,27 @@ function Heatmap({ data }: HeatmapProps) {
                   </div>
                 );
               })}
-            </div>
+            </Fragment>
           ))}
 
           {/* Org average row */}
-          <div style={{ borderTop: "0.5px solid #c7c5ba", marginTop: "6px", paddingTop: "12px" }}>
+          <Fragment key={orgAvg.name}>
             <div
               style={{
+                borderTop: "0.5px solid #c7c5ba",
+                marginTop: "6px",
+                paddingTop: "12px",
                 fontSize: "13px",
                 fontWeight: "500",
                 display: "flex",
                 alignItems: "center",
-                padding: "0 6px",
+                paddingLeft: "6px",
+                paddingRight: "6px",
               }}
             >
               {orgAvg.name}
             </div>
-          </div>
-          {DIMS.map((dim) => {
+            {DIMS.map((dim) => {
             const v = orgAvg.scores[dim.k];
             const t = tier(v);
             const key = `${orgAvg.name}-${dim.k}`;
@@ -300,7 +316,8 @@ function Heatmap({ data }: HeatmapProps) {
                 {fmt(v)}
               </div>
             );
-          })}
+            })}
+          </Fragment>
         </div>
       </div>
 
@@ -352,6 +369,38 @@ function Heatmap({ data }: HeatmapProps) {
                 <span style={{ color: "#5f5e5a" }}>Action — </span>
                 {selectedDetail.action}
               </p>
+              {selectedDetail.achievements.map((achievement) => {
+                const details = achievement.dimensionDetails?.[selectedDetail.dimension];
+                const commitment = data.commits.find((commit) => commit.id === achievement.commitId);
+                const attachments = Object.entries(achievement.fileAttachments || {}) as [Dim, Attachment | string][];
+                const dimensionAttachments = attachments.filter(([dim]) => dim === selectedDetail.dimension);
+                return (
+                  <div key={achievement.id} style={{ borderTop: "0.5px solid #c7c5ba", paddingTop: "10px", marginTop: "10px" }}>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#1c1c1a" }}>{achievement.title}</div>
+                    {details ? (
+                      <div style={{ fontSize: "12px", color: "#5f5e5a", marginTop: "4px", lineHeight: "1.5" }}>
+                        <b>{details.title} · {details.rating}/10</b>
+                        <div>{details.notes}</div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: "12px", color: "#5f5e5a", marginTop: "4px" }}>{achievement.evidence}</div>
+                    )}
+                    {commitment && <div style={{ fontSize: "12px", color: "#5f5e5a", marginTop: "4px" }}><b>Commitment:</b> {commitment.statement}</div>}
+                    {dimensionAttachments.map(([dim, attachment]) => typeof attachment === "string" ? (
+                      <div key={dim} style={{ fontSize: "12px", color: "#5f5e5a", marginTop: "4px" }}>{attachment}</div>
+                    ) : (
+                      <button
+                        key={dim}
+                        type="button"
+                        style={{ display: "block", border: 0, background: "none", padding: 0, color: "#185fa5", textDecoration: "underline", cursor: "pointer", marginTop: "4px", fontSize: "12px" }}
+                        onClick={() => api.downloadAttachment(attachment).catch((err) => console.error("Failed to download attachment:", err))}
+                      >
+                        Download {CPQSDP_DIMS.find((item) => item.key === dim)?.label || dim}: {attachment.name}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
               <div style={{ display: "flex", gap: "8px" }}>
                 <span style={{ fontSize: "12px", background: "#ffffff", borderRadius: "6px", padding: "4px 10px", color: "#5f5e5a" }}>
                   Owner: {selectedDetail.owner}

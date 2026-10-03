@@ -3,6 +3,11 @@ dotenv.config()
 
 import express from 'express'
 import cors from 'cors'
+import multer from 'multer'
+import path from 'node:path'
+import { randomUUID } from 'node:crypto'
+import { fileURLToPath } from 'node:url'
+import { mkdir } from 'node:fs/promises'
 import { initDb, dbRun, dbGet, dbAll } from './db.js'
 import { verifyToken, generateToken } from './middleware/auth.js'
 
@@ -20,6 +25,20 @@ const seedPeople = [
 
 const app = express()
 const PORT = process.env.BACKENDPORT || 6001
+const uploadDirectory = fileURLToPath(new URL('./uploads/', import.meta.url))
+await mkdir(uploadDirectory, { recursive: true })
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, callback) => callback(null, uploadDirectory),
+    filename: (req, file, callback) => {
+      const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_')
+      callback(null, `${req.user.userId}-${randomUUID()}-${safeName}`)
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+})
+const dimensionKeys = new Set(['C', 'P', 'Q', 'S', 'D', 'O'])
 
 // Middleware
 app.use(cors())
@@ -301,20 +320,35 @@ app.delete('/api/commits/:id', verifyToken, async (req, res) => {
 // Achievements
 app.get('/api/achievements', verifyToken, async (req, res) => {
   try {
+    const formatAchievement = achievement => {
+      let attachmentData = null
+      const value = achievement.fileAttachment
+      if (value) {
+        try {
+          attachmentData = JSON.parse(value)
+        } catch {
+          attachmentData = value
+        }
+      }
+      const isLegacyAttachment = typeof attachmentData === 'string' ||
+        (attachmentData && typeof attachmentData === 'object' && 'filename' in attachmentData)
+      return {
+        ...achievement,
+        cpqsdp: JSON.parse(achievement.cpqsdp),
+        dimensionDetails: achievement.dimensionDetails ? JSON.parse(achievement.dimensionDetails) : null,
+        fileAttachment: isLegacyAttachment ? attachmentData : null,
+        fileAttachments: isLegacyAttachment ? {} : attachmentData || {},
+      }
+    }
+
     if(req.user.role === 'ceo' || req.user.role==='hr') {
       const achievements = await dbAll('SELECT * FROM achievements ORDER BY date DESC')
-      const parsedAchievements = achievements.map(a => ({
-        ...a,
-        cpqsdp: JSON.parse(a.cpqsdp)
-      }))
+      const parsedAchievements = achievements.map(formatAchievement)
       res.json(parsedAchievements)
     }
     else{
       const achievements = await dbAll('SELECT * FROM achievements WHERE personId = ? ORDER BY date DESC', [req.user.userId])
-      const parsedAchievements = achievements.map(a => ({
-        ...a,
-        cpqsdp: JSON.parse(a.cpqsdp)
-      }))
+      const parsedAchievements = achievements.map(formatAchievement)
       res.json(parsedAchievements)
     }
   } catch (err) {
@@ -322,8 +356,62 @@ app.get('/api/achievements', verifyToken, async (req, res) => {
   }
 })
 
-app.post('/api/achievements', verifyToken, async (req, res) => {
-  const { id, personId, commitId, title, evidence, cpqsdp, impactRating, date, fileAttachment } = req.body;  
+app.get('/api/achievements/draft', verifyToken, async (req, res) => {
+  try {
+    const draft = await dbGet('SELECT draftData FROM achievementDrafts WHERE personId = ?', [req.user.userId])
+    res.json(draft ? JSON.parse(draft.draftData) : null)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.put('/api/achievements/draft', verifyToken, upload.any(), async (req, res) => {
+  try {
+    const draft = JSON.parse(req.body.draft)
+    draft.dimensionData ||= {}
+    for (const file of req.files) {
+      if (!dimensionKeys.has(file.fieldname)) return res.status(400).json({ error: 'Invalid attachment dimension' })
+      draft.dimensionData[file.fieldname] ||= {}
+      draft.dimensionData[file.fieldname].attachment = { filename: file.filename, name: file.originalname }
+    }
+    const serializedDraft = JSON.stringify(draft)
+    await dbRun(
+      `INSERT INTO achievementDrafts (personId, draftData) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE draftData = VALUES(draftData), updatedAt = CURRENT_TIMESTAMP`,
+      [req.user.userId, serializedDraft]
+    )
+    res.json(draft)
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+app.get('/api/uploads/:filename', verifyToken, async (req, res) => {
+  const filename = path.basename(req.params.filename)
+  if (filename !== req.params.filename) return res.status(400).json({ error: 'Invalid filename' })
+  if (!filename.startsWith(`${req.user.userId}-`) && !['hr', 'ceo'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Not allowed to access this attachment' })
+  }
+  res.download(path.join(uploadDirectory, filename), err => {
+    if (err && !res.headersSent) res.status(404).json({ error: 'Attachment not found' })
+  })
+})
+
+app.post('/api/achievements', verifyToken, upload.any(), async (req, res) => {
+  let achievement
+  try {
+    achievement = JSON.parse(req.body.achievement || '{}')
+  } catch {
+    return res.status(400).json({ error: 'Invalid achievement payload' })
+  }
+  const { id, commitId, title, evidence, cpqsdp, impactRating, date, dimensionDetails } = achievement
+  const personId = req.user.userId
+  const fileAttachments = { ...(achievement.fileAttachments || {}) }
+  for (const file of req.files) {
+    if (!dimensionKeys.has(file.fieldname)) return res.status(400).json({ error: 'Invalid attachment dimension' })
+    fileAttachments[file.fieldname] = { filename: file.filename, name: file.originalname }
+  }
+  const fileAttachment = JSON.stringify(fileAttachments)
   const parsedDate = new Date(date);
 
   if (isNaN(parsedDate.getTime())) {
@@ -337,11 +425,16 @@ app.post('/api/achievements', verifyToken, async (req, res) => {
   
     try {
     await dbRun(
-      `INSERT INTO achievements (id, personId, commitId, title, evidence, cpqsdp, impactRating, date, fileAttachment)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, personId, commitId, title, evidence, JSON.stringify(cpqsdp), impactRating, datefield, fileAttachment]
+      `INSERT INTO achievements (id, personId, commitId, title, evidence, cpqsdp, impactRating, date, fileAttachment, dimensionDetails)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, personId, commitId, title, evidence, JSON.stringify(cpqsdp), impactRating, datefield, fileAttachment, JSON.stringify(dimensionDetails || {})]
     )
-    res.json({ id })
+    await dbRun('DELETE FROM achievementDrafts WHERE personId = ?', [personId])
+    res.json({
+      id,
+      dimensionDetails: dimensionDetails || {},
+      fileAttachments,
+    })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
