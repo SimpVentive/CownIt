@@ -320,24 +320,38 @@ app.delete('/api/commits/:id', verifyToken, async (req, res) => {
 // Achievements
 app.get('/api/achievements', verifyToken, async (req, res) => {
   try {
-    const formatAchievement = achievement => {
-      let attachmentData = null
-      const value = achievement.fileAttachment
-      if (value) {
-        try {
-          attachmentData = JSON.parse(value)
-        } catch {
-          attachmentData = value
-        }
+    const parseStoredJson = (value, fallback, column, achievementId) => {
+      if (value === null || value === undefined || value === '') return fallback
+      if (typeof value !== 'string') return value
+      try {
+        return JSON.parse(value)
+      } catch (err) {
+        console.warn(`Invalid JSON in achievements.${column} for ${achievementId}: ${err.message}`)
+        return fallback
       }
+    }
+
+    const formatAchievement = achievement => {
+      const attachmentData = parseStoredJson(
+        achievement.fileAttachment,
+        achievement.fileAttachment || null,
+        'fileAttachment',
+        achievement.id
+      )
+      const parsedDimensions = parseStoredJson(achievement.cpqsdp, [], 'cpqsdp', achievement.id)
+      const parsedDetails = parseStoredJson(achievement.dimensionDetails, null, 'dimensionDetails', achievement.id)
       const isLegacyAttachment = typeof attachmentData === 'string' ||
         (attachmentData && typeof attachmentData === 'object' && 'filename' in attachmentData)
       return {
         ...achievement,
-        cpqsdp: JSON.parse(achievement.cpqsdp),
-        dimensionDetails: achievement.dimensionDetails ? JSON.parse(achievement.dimensionDetails) : null,
+        cpqsdp: Array.isArray(parsedDimensions) ? parsedDimensions : [],
+        dimensionDetails: parsedDetails && typeof parsedDetails === 'object' && !Array.isArray(parsedDetails)
+          ? parsedDetails
+          : null,
         fileAttachment: isLegacyAttachment ? attachmentData : null,
-        fileAttachments: isLegacyAttachment ? {} : attachmentData || {},
+        fileAttachments: !isLegacyAttachment && attachmentData && typeof attachmentData === 'object' && !Array.isArray(attachmentData)
+          ? attachmentData
+          : {},
       }
     }
 
