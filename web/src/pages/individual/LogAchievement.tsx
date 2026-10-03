@@ -328,7 +328,7 @@ function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementPro
                   </div>
                 </div>
 
-                <label className="mb-2 block text-xs font-medium text-[#333]">Dimension title</label>
+                <label className="mb-2 block text-xs font-medium text-[#333]">What is the expected impact?</label>
                 <input
                   type="text"
                   value={data.title}
@@ -337,7 +337,7 @@ function LogAchievement({ data, currentUserId, onDataChange }: LogAchievementPro
                   className="mb-3 w-full rounded-lg border border-[#ddd] px-2.5 py-2 text-xs outline-none focus:border-[#1f77d4]"
                 />
 
-                <label className="mb-2 block text-xs font-medium text-[#333]">Notes</label>
+                <label className="mb-2 block text-xs font-medium text-[#333]">Evidence / Notes</label>
                 <textarea
                   value={data.notes}
                   onChange={(e) => updateDimensionData(dim, "notes", e.target.value)}

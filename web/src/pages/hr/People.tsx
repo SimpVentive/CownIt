@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import type { AppData } from "@/lib/types";
-import { formatDate } from "@/lib/utilsApp";
+import type { AppData, Dim } from "@/lib/types";
+import { CPQSDP_DIMS, formatDate } from "@/lib/utilsApp";
 
 interface HrPeopleProps {
   data: AppData;
@@ -54,10 +54,19 @@ function HrPeople({ data, onSelectPerson }: HrPeopleProps) {
       (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )[0];
 
-    const score =
-      personAchievements.length > 0
-        ? personAchievements.reduce((sum, a) => sum + a.impactRating, 0) / personAchievements.length
-        : null;
+    const dimensionScores = CPQSDP_DIMS.flatMap(({ key }) => {
+      const dimensionAchievements = personAchievements.filter((achievement) => achievement.cpqsdp.includes(key as Dim));
+      if (dimensionAchievements.length === 0) return [];
+      return [
+        dimensionAchievements.reduce(
+          (sum, achievement) => sum + (achievement.dimensionDetails?.[key as Dim]?.rating ?? achievement.impactRating),
+          0
+        ) / dimensionAchievements.length,
+      ];
+    });
+    const score = dimensionScores.length > 0
+      ? dimensionScores.reduce((sum, dimensionScore) => sum + dimensionScore, 0) / dimensionScores.length
+      : null;
 
     const hasUpdate = (data.monthlyUpdates ?? []).some(
       (u) =>
