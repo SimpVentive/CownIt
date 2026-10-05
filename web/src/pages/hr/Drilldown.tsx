@@ -128,7 +128,7 @@ function Drilldown({ data, selectedPersonId, onDataChange }: DrilldownProps) {
 
                 {commitment && (
                   <div className="mb-3 text-xs text-[#666]">
-                    <span className="font-medium">Commitment:</span> {commitment.statement}
+                    <span className="font-medium">Commitment:</span> {commitment.statement} <br /><span className="font-medium">Level:</span> {commitment.level ? commitment.level=='hr'?`Team / Department`: commitment.level=='ceo'?`Organisation`: commitment.level=='individual'?`Self`: "" : ""}
                   </div>
                 )}
 

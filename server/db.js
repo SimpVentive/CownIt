@@ -54,6 +54,27 @@ const dbAll = async (sql, params = []) => {
   return rows
 }
 
+const dbTransaction = async (callback) => {
+  const connection = await pool.getConnection()
+  let transactionStarted = false
+  try {
+    await connection.beginTransaction()
+    transactionStarted = true
+    const result = await callback(connection)
+    await connection.commit()
+    return result
+  } catch (err) {
+    if (transactionStarted) {
+      try {
+        await connection.rollback()
+      } catch {}
+    }
+    throw err
+  } finally {
+    connection.release()
+  }
+}
+
 export async function initDb() {
   try {
     await dbRun(`
@@ -161,4 +182,4 @@ export async function initDb() {
   }
 }
 
-export { dbRun, dbGet, dbAll }
+export { dbRun, dbGet, dbAll, dbTransaction }

@@ -409,7 +409,7 @@ function Dashboard({ data }: DashboardProps) {
                     </div>
                     {commitment && (
                       <div style={{ fontSize: "12px", color: "#4B5158", marginTop: "6px" }}>
-                        <b>Commitment:</b> {commitment.statement}
+                        <span className="font-medium">Commitment:</span> {commitment.statement} <br /><span className="font-medium">Level:</span> {commitment.level ? commitment.level=='hr'?`Team / Department`: commitment.level=='ceo'?`Organisation`: commitment.level=='individual'?`Self`: "" : ""}
                       </div>
                     )}
                     {a.dimensionDetails ? (

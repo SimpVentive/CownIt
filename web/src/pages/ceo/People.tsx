@@ -204,7 +204,7 @@ function CeoPeople({ data }: CeoPeopleProps) {
                       </div>
                       {commitment && (
                         <div className="mt-2 text-xs text-[#666]">
-                          <span className="font-medium">Commitment:</span> {commitment.statement}
+                          <span className="font-medium">Commitment:</span> {commitment.statement} <br /><span className="font-medium">Level:</span> {commitment.level ? commitment.level=='hr'?`Team / Department`: commitment.level=='ceo'?`Organisation`: commitment.level=='individual'?`Self`: "" : ""}
                         </div>
                       )}
                       {attachments.length > 0 ? (

@@ -99,7 +99,7 @@ function MyImpact({ data, currentUserId }: MyImpactProps) {
 
                 {commit && (
                   <div className="mb-3 text-xs text-[#666]">
-                    <span className="font-medium">Commitment:</span> {commit.statement}
+                    <span className="font-medium">Commitment:</span> {commit.statement} <br /><span className="font-medium">Level:</span> {commit.level ? commit.level=='hr'?`Team / Department`: commit.level=='ceo'?`Organisation`: commit.level=='individual'?`Self`: "" : ""}
                   </div>
                 )}
 

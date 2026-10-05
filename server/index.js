@@ -8,7 +8,7 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { mkdir } from 'node:fs/promises'
-import { initDb, dbRun, dbGet, dbAll } from './db.js'
+import { initDb, dbRun, dbGet, dbAll, dbTransaction } from './db.js'
 import { verifyToken, generateToken } from './middleware/auth.js'
 
 import bcrypt from 'bcrypt';
@@ -414,7 +414,9 @@ app.get('/api/uploads/:filename', verifyToken, async (req, res) => {
 app.post('/api/achievements', verifyToken, upload.any(), async (req, res) => {
   let achievement
   try {
-    achievement = JSON.parse(req.body.achievement || '{}')
+    achievement = typeof req.body.achievement === 'string'
+      ? JSON.parse(req.body.achievement)
+      : req.body.achievement || req.body
   } catch {
     return res.status(400).json({ error: 'Invalid achievement payload' })
   }
@@ -438,12 +440,19 @@ app.post('/api/achievements', verifyToken, upload.any(), async (req, res) => {
     .replace("T", " ");
   
     try {
-    await dbRun(
-      `INSERT INTO achievements (id, personId, commitId, title, evidence, cpqsdp, impactRating, date, fileAttachment, dimensionDetails)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, personId, commitId, title, evidence, JSON.stringify(cpqsdp), impactRating, datefield, fileAttachment, JSON.stringify(dimensionDetails || {})]
-    )
-    await dbRun('DELETE FROM achievementDrafts WHERE personId = ?', [personId])
+    await dbTransaction(async (connection) => {
+      await connection.execute(
+        `INSERT INTO achievements (id, personId, commitId, title, evidence, cpqsdp, impactRating, date, fileAttachment, dimensionDetails)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, personId, commitId, title, evidence, JSON.stringify(cpqsdp), impactRating, datefield, fileAttachment, JSON.stringify(dimensionDetails || {})]
+      )
+      await connection.execute('DELETE FROM achievementDrafts WHERE personId = ?', [personId])
+      await connection.execute(
+        `INSERT INTO monthlyUpdates (id, personId, month, year, note, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [randomUUID(), personId, parsedDate.getUTCMonth() + 1, parsedDate.getUTCFullYear(), `${title}\n${evidence}`, datefield]
+      )
+    })
     res.json({
       id,
       dimensionDetails: dimensionDetails || {},
@@ -457,7 +466,9 @@ app.post('/api/achievements', verifyToken, upload.any(), async (req, res) => {
 // Monthly Updates
 app.get('/api/monthlyUpdates', verifyToken, async (req, res) => {
   try {
-    const updates = await dbAll('SELECT * FROM monthlyUpdates WHERE personId = ? ORDER BY updatedAt DESC', [req.user.userId])
+    const updates = ['hr', 'ceo'].includes(req.user.role)
+      ? await dbAll('SELECT * FROM monthlyUpdates ORDER BY updatedAt DESC')
+      : await dbAll('SELECT * FROM monthlyUpdates WHERE personId = ? ORDER BY updatedAt DESC', [req.user.userId])
     res.json(updates)
   } catch (err) {
     res.status(500).json({ error: err.message })

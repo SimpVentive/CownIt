@@ -85,7 +85,6 @@ function HrPeople({ data, onSelectPerson }: HrPeopleProps) {
       status: hasUpdate ? "current" : "overdue",
     };
   });
-
   const updatedCount = personScores.filter((p) => p.status === "current").length;
   const avgScore = personScores
     .filter((p) => p.score !== null)
